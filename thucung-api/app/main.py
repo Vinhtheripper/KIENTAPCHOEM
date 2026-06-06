@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="GPet Vet AI API",
-    description="AI veterinary assistant API with MongoDB, RAG, and Ollama.",
+    description="AI veterinary assistant API with MongoDB, RAG, and Gemini.",
     version="0.1.0",
     lifespan=lifespan,
 )

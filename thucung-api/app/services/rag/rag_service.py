@@ -1,4 +1,4 @@
-from app.services.ai.ollama_service import OllamaService
+from app.services.ai.gemini_service import GeminiService
 from app.services.rag.prompts import build_rag_prompt
 from app.services.rag.retrieval import RetrievalService
 from app.services.repositories.chat_repository import ChatRepository
@@ -7,7 +7,7 @@ from app.services.repositories.chat_repository import ChatRepository
 class RagService:
     def __init__(self):
         self.retrieval = RetrievalService()
-        self.ollama = OllamaService()
+        self.ai = GeminiService()
         self.chat_repository = ChatRepository()
 
     async def answer(self, owner_id: str, pet_id: str, message: str, session_id: str | None = None) -> dict:
@@ -15,7 +15,7 @@ class RagService:
         history = await self.chat_repository.recent_messages(session_id)
         chunks = await self.retrieval.retrieve(owner_id, pet_id, message)
         prompt = build_rag_prompt(message, chunks, history)
-        answer = await self.ollama.generate(prompt)
+        answer = await self.ai.generate(prompt)
         citations = [
             {
                 "content_id": chunk.get("content_id"),

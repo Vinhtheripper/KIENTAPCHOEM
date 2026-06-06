@@ -21,7 +21,7 @@ function DashboardPage() {
           [HeartPulse, pets.length, 'Pets managed'],
           [FileText, '0', 'Ready content items'],
           [Syringe, 'Soon', 'Vaccine reminders'],
-          [Bot, 'Ollama', 'Local AI model'],
+          [Bot, 'Gemini', 'Cloud AI model'],
         ].map(([Icon, value, label]) => (
           <div className="stat-card" key={label}>
             <Icon className="mb-4 h-7 w-7 text-mint-700" />

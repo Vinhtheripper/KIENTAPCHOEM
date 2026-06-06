@@ -26,7 +26,7 @@ function LandingPage() {
         <div className="glass-panel rounded-[30px] p-5">
           <div className="grid gap-4">
             {[
-              [Bot, 'Ollama chatbot', 'Answers with memory, RAG context, and Vietnamese support.'],
+              [Bot, 'Gemini chatbot', 'Answers with memory, RAG context, and Vietnamese support.'],
               [FileHeart, 'Unified content', 'PDF, DOCX, TXT, media, YouTube, and URLs share one ingestion model.'],
               [ShieldCheck, 'Health guidance', 'Symptom triage with clear veterinary disclaimer and urgency cues.'],
             ].map(([Icon, title, copy]) => (
