@@ -15,18 +15,34 @@ def public_user(user: dict) -> dict:
 
 @router.post("/register", response_model=TokenResponse)
 async def register(payload: RegisterRequest):
-    existing = await users.find_by_email(payload.email)
-    if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
-    user = await users.create(user_document(payload.email, payload.full_name, hash_password(payload.password)))
-    token = create_access_token(user["_id"], {"role": user["role"]})
-    return TokenResponse(access_token=token, user=public_user(user))
+    try:
+        existing = await users.find_by_email(payload.email)
+        if existing:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+        user = await users.create(user_document(payload.email, payload.full_name, hash_password(payload.password)))
+        token = create_access_token(user["_id"], {"role": user["role"]})
+        return TokenResponse(access_token=token, user=public_user(user))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration service error: {type(exc).__name__}: {exc}",
+        ) from exc
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest):
-    user = await users.find_by_email(payload.email)
-    if not user or not verify_password(payload.password, user["password_hash"]):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-    token = create_access_token(user["_id"], {"role": user.get("role", "pet_owner")})
-    return TokenResponse(access_token=token, user=public_user(user))
+    try:
+        user = await users.find_by_email(payload.email)
+        if not user or not verify_password(payload.password, user["password_hash"]):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+        token = create_access_token(user["_id"], {"role": user.get("role", "pet_owner")})
+        return TokenResponse(access_token=token, user=public_user(user))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login service error: {type(exc).__name__}: {exc}",
+        ) from exc
