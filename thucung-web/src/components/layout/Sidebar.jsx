@@ -1,4 +1,4 @@
-import { Bot, FileText, HeartPulse, Home, Settings, UploadCloud } from 'lucide-react'
+import { Bot, FileText, HeartPulse, Home, Settings, Stethoscope, UploadCloud } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const links = [
@@ -14,7 +14,9 @@ function Sidebar() {
   return (
     <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/64 p-5 backdrop-blur-xl lg:block">
       <div className="mb-8 flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-mint-500 text-xl font-black text-white">G</div>
+        <div className="grid h-12 w-12 place-items-center rounded-2xl border-2 border-mint-500 bg-white text-mint-700">
+          <Stethoscope className="h-7 w-7" />
+        </div>
         <div>
           <p className="text-lg font-black text-ink">GPet Vet AI</p>
           <p className="text-sm text-mint-700">Medical memory hub</p>

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, Bot, FileHeart, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Bot, FileHeart, ShieldCheck, Stethoscope } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 function LandingPage() {
@@ -7,7 +7,9 @@ function LandingPage() {
     <main className="min-h-screen overflow-hidden bg-[linear-gradient(135deg,#f6fbf8,#dff7ed)] text-ink">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
         <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-mint-500 font-black text-white">G</div>
+          <div className="grid h-11 w-11 place-items-center rounded-2xl border-2 border-mint-500 bg-white text-mint-700">
+            <Stethoscope className="h-6 w-6" />
+          </div>
           <span className="text-lg font-black">GPet Vet AI</span>
         </div>
         <Link className="btn-primary" to="/login">Open app <ArrowRight className="h-4 w-4" /></Link>
