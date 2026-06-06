@@ -5,7 +5,7 @@ import PetProfileForm from '../components/pet/PetProfileForm.jsx'
 import usePetStore from '../store/petStore.js'
 
 function PetProfilePage() {
-  const { pets, selectedPetId, selectPet, fetchPets } = usePetStore()
+  const { pets, selectedPetId, selectPet, fetchPets, deletePet } = usePetStore()
 
   useEffect(() => {
     fetchPets().catch(() => {})
@@ -18,7 +18,7 @@ function PetProfilePage() {
         <h1 className="page-title mt-4">Pet profiles</h1>
         <p className="mt-2 max-w-2xl text-[#527b70]">Structured pet data is included in chatbot context, upload metadata, and future health summaries.</p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} />)}
+          {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} onDelete={deletePet} />)}
         </div>
         {pets.length === 0 && (
           <div className="empty-state mt-6 rounded-[24px] p-8 text-center">

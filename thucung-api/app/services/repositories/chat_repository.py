@@ -30,3 +30,7 @@ class ChatRepository:
             document["_id"] = str(document["_id"])
             rows.append(document)
         return list(reversed(rows))
+
+    async def delete_for_pet(self, owner_id: str, pet_id: str) -> None:
+        await self.sessions.delete_many({"owner_id": owner_id, "pet_id": pet_id})
+        await self.messages.delete_many({"owner_id": owner_id, "pet_id": pet_id})

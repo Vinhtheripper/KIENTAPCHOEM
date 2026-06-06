@@ -43,3 +43,7 @@ class ContentRepository:
             document["_id"] = str(document["_id"])
             rows.append(document)
         return rows
+
+    async def delete_for_pet(self, owner_id: str, pet_id: str) -> None:
+        await self.items.delete_many({"owner_id": owner_id, "pet_id": pet_id})
+        await self.chunks.delete_many({"owner_id": owner_id, "pet_id": pet_id})

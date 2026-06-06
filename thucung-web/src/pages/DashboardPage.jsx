@@ -5,7 +5,7 @@ import usePetStore from '../store/petStore.js'
 import PetCard from '../components/pet/PetCard.jsx'
 
 function DashboardPage() {
-  const { pets, selectedPetId, selectPet, fetchPets } = usePetStore()
+  const { pets, selectedPetId, selectPet, fetchPets, deletePet } = usePetStore()
 
   useEffect(() => {
     fetchPets().catch(() => {})
@@ -60,7 +60,7 @@ function DashboardPage() {
       <section>
         <h2 className="mb-3 text-xl font-black text-ink">Your pets</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} />)}
+          {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} onDelete={deletePet} />)}
         </div>
         {pets.length === 0 && (
           <div className="empty-state rounded-[24px] p-8 text-center">

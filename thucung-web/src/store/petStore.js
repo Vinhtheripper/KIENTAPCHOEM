@@ -15,6 +15,14 @@ const usePetStore = create((set, get) => ({
     set((state) => ({ pets: [pet, ...state.pets], selectedPetId: pet._id }))
     return pet
   },
+  deletePet: async (petId) => {
+    await petApi.remove(petId)
+    set((state) => {
+      const pets = state.pets.filter((pet) => pet._id !== petId)
+      const selectedPetId = state.selectedPetId === petId ? pets[0]?._id || null : state.selectedPetId
+      return { pets, selectedPetId }
+    })
+  },
   selectPet: (petId) => set({ selectedPetId: petId }),
 }))
 
