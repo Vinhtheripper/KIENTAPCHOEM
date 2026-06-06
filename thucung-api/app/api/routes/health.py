@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.core.config import settings
 from app.core.database import get_database
@@ -12,7 +12,10 @@ async def health_check():
 
 
 @router.get("/db")
-async def database_health_check():
+async def database_health_check(request: Request):
+    startup_error = getattr(request.app.state, "mongo_startup_error", None)
+    if startup_error:
+        raise HTTPException(status_code=500, detail=f"MongoDB startup failed: {startup_error}")
     try:
         db = get_database()
         await db.client.admin.command("ping")

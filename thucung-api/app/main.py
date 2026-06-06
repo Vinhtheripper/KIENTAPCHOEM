@@ -10,7 +10,10 @@ from app.core.database import close_mongo_connection, connect_to_mongo
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await connect_to_mongo()
+    try:
+        await connect_to_mongo()
+    except Exception as exc:
+        app.state.mongo_startup_error = f"{type(exc).__name__}: {exc}"
     yield
     await close_mongo_connection()
 
