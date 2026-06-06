@@ -31,9 +31,19 @@ const useAuthStore = create(
           throw error
         }
       },
-      logout: () => set({ token: null, user: null }),
+      logout: () => set({ token: null, user: null, loading: false, error: null }),
     }),
-    { name: 'gpet-auth' },
+    {
+      name: 'gpet-auth',
+      partialize: (state) => ({ token: state.token, user: state.user }),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        token: persistedState?.token ?? null,
+        user: persistedState?.user ?? null,
+        loading: false,
+        error: null,
+      }),
+    },
   ),
 )
 
