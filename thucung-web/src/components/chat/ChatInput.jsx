@@ -19,7 +19,7 @@ function ChatInput({ onSend, disabled }) {
         value={message}
         onChange={(event) => setMessage(event.target.value)}
       />
-      <button className="btn-primary h-14 w-14 shrink-0 p-0" type="submit" disabled={disabled} aria-label="Send message">
+      <button className="btn-primary h-14 w-14 shrink-0 rounded-[18px] p-0" type="submit" disabled={disabled} aria-label="Send message">
         <Send className="h-5 w-5" />
       </button>
     </form>

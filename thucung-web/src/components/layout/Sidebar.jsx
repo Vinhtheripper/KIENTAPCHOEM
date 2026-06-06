@@ -1,20 +1,12 @@
-import { Bot, FileText, HeartPulse, Home, Settings, Stethoscope, UploadCloud } from 'lucide-react'
+import { Stethoscope } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-
-const links = [
-  { to: '/app', label: 'Dashboard', icon: Home, end: true },
-  { to: '/app/pets', label: 'Pets', icon: HeartPulse },
-  { to: '/app/upload', label: 'Upload', icon: UploadCloud },
-  { to: '/app/content', label: 'Content', icon: FileText },
-  { to: '/app/chat', label: 'AI Chat', icon: Bot },
-  { to: '/app/settings', label: 'Settings', icon: Settings },
-]
+import { navLinks } from './navLinks.jsx'
 
 function Sidebar() {
   return (
-    <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/64 p-5 backdrop-blur-xl lg:block">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl border-2 border-mint-500 bg-white text-mint-700">
+    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/75 bg-white/70 p-5 backdrop-blur-2xl lg:block">
+      <div className="mb-8 flex items-center gap-3 rounded-[22px] bg-white/75 p-3 shadow-sm">
+        <div className="logo-mark h-12 w-12 rounded-2xl">
           <Stethoscope className="h-7 w-7" />
         </div>
         <div>
@@ -23,14 +15,16 @@ function Sidebar() {
         </div>
       </div>
       <nav className="space-y-2">
-        {links.map(({ to, label, icon: Icon, end }) => (
+        {navLinks.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-2xl px-4 py-3 font-bold transition ${
-                isActive ? 'bg-mint-500 text-white shadow-lg shadow-mint-500/20' : 'text-[#315e52] hover:bg-white'
+              `group flex items-center gap-3 rounded-2xl px-4 py-3 font-bold transition ${
+                isActive
+                  ? 'bg-[#17312b] text-white shadow-lg shadow-[#17312b]/15'
+                  : 'text-[#315e52] hover:bg-white hover:text-ink'
               }`
             }
           >
@@ -39,6 +33,10 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <div className="absolute bottom-5 left-5 right-5 rounded-[22px] border border-[#d9ece5] bg-[#f5fbf8] p-4">
+        <p className="text-sm font-black text-ink">AI safety note</p>
+        <p className="mt-1 text-xs leading-5 text-[#527b70]">Vet guidance is informational and never replaces professional diagnosis.</p>
+      </div>
     </aside>
   )
 }

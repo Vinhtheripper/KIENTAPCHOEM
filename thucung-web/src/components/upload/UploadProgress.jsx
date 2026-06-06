@@ -1,7 +1,7 @@
 function UploadProgress({ progress }) {
   if (!progress) return null
   return (
-    <div className="rounded-2xl bg-white p-3">
+    <div className="surface-card rounded-2xl p-4">
       <div className="mb-2 flex justify-between text-sm font-bold text-[#527b70]">
         <span>Processing upload</span>
         <span>{progress}%</span>

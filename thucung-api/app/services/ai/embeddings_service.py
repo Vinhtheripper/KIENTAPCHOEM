@@ -4,17 +4,21 @@ from app.core.config import settings
 
 
 class EmbeddingsService:
+    def _model_name(self) -> str:
+        return settings.embedding_model.removeprefix("models/")
+
     async def embed(self, text: str) -> list[float] | None:
         if not settings.gemini_api_key or settings.gemini_api_key == "your-gemini-api-key":
             return None
 
+        model = self._model_name()
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.post(
-                    f"{settings.gemini_base_url}/models/{settings.embedding_model}:embedContent",
+                    f"{settings.gemini_base_url}/models/{model}:embedContent",
                     headers={"x-goog-api-key": settings.gemini_api_key},
                     json={
-                        "model": f"models/{settings.embedding_model}",
+                        "model": f"models/{model}",
                         "content": {"parts": [{"text": text}]},
                     },
                 )

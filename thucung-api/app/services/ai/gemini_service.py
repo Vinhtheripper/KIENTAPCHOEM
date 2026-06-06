@@ -7,6 +7,9 @@ class GeminiService:
     def _has_api_key(self) -> bool:
         return bool(settings.gemini_api_key and settings.gemini_api_key != "your-gemini-api-key")
 
+    def _model_name(self) -> str:
+        return settings.gemini_model.removeprefix("models/")
+
     async def generate(self, prompt: str) -> str:
         if not self._has_api_key():
             return (
@@ -14,7 +17,8 @@ class GeminiService:
                 "This AI assistant does not replace professional veterinary diagnosis."
             )
 
-        url = f"{settings.gemini_base_url}/models/{settings.gemini_model}:generateContent"
+        model = self._model_name()
+        url = f"{settings.gemini_base_url}/models/{model}:generateContent"
         payload = {
             "contents": [
                 {
@@ -45,8 +49,12 @@ class GeminiService:
                     "This AI assistant does not replace professional veterinary diagnosis."
                 )
         except httpx.HTTPStatusError as exc:
+            try:
+                error_detail = exc.response.json().get("error", {}).get("message", exc.response.text)
+            except Exception:
+                error_detail = exc.response.text
             return (
-                f"Gemini API error: {exc.response.status_code}. Check GEMINI_API_KEY, model name, and API quota.\n\n"
+                f"Gemini API error: {exc.response.status_code}. Model: {model}. Detail: {error_detail}\n\n"
                 "This AI assistant does not replace professional veterinary diagnosis."
             )
         except Exception:
