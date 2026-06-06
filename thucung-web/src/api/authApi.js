@@ -1,0 +1,6 @@
+import apiClient from './client.js'
+
+export const authApi = {
+  register: (payload) => apiClient.post('/auth/register', payload).then((res) => res.data),
+  login: (payload) => apiClient.post('/auth/login', payload).then((res) => res.data),
+}
