@@ -35,9 +35,11 @@ async def database_health_check(request: Request):
 
 @router.get("/ai")
 async def ai_health_check():
-    answer = await GeminiService().generate("Reply with only: ok")
+    service = GeminiService()
+    answer = await service.generate("Reply with only: ok")
     return {
         "model": settings.gemini_model,
+        "fallback_models": service.fallback_models,
         "status": "ok" if answer.strip().lower().startswith("ok") else "check",
         "response": answer,
     }
