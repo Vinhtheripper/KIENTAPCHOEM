@@ -11,6 +11,21 @@ pets = PetRepository()
 content = ContentRepository()
 
 
+def attach_owner(rows: list[dict], user_rows: list[dict]) -> list[dict]:
+    users_by_id = {user["_id"]: user for user in user_rows}
+    enriched = []
+    for row in rows:
+        owner = users_by_id.get(row.get("owner_id"))
+        enriched.append(
+            {
+                **row,
+                "owner_name": owner.get("full_name") if owner else "Unknown owner",
+                "owner_email": owner.get("email") if owner else None,
+            }
+        )
+    return enriched
+
+
 @router.get("/users")
 async def list_users(_: dict = Depends(require_admin)):
     return await users.list_all()
@@ -18,9 +33,13 @@ async def list_users(_: dict = Depends(require_admin)):
 
 @router.get("/pets")
 async def list_all_pets(owner_id: str | None = None, _: dict = Depends(require_admin)):
-    return await pets.list_all(owner_id)
+    user_rows = await users.list_all()
+    pet_rows = await pets.list_all(owner_id)
+    return attach_owner(pet_rows, user_rows)
 
 
 @router.get("/content")
 async def list_all_content(owner_id: str | None = None, pet_id: str | None = None, _: dict = Depends(require_admin)):
-    return await content.list_items(owner_id, pet_id, admin=True)
+    user_rows = await users.list_all()
+    content_rows = await content.list_items(owner_id, pet_id, admin=True)
+    return attach_owner(content_rows, user_rows)

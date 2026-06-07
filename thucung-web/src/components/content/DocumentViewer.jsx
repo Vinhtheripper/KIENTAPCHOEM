@@ -6,7 +6,7 @@ function statusTone(status) {
   return 'accent-blue'
 }
 
-function DocumentViewer({ item, selected, onOpen }) {
+function DocumentViewer({ item, selected, petName, onOpen }) {
   const StatusIcon = item.status === 'ready' ? CheckCircle2 : Clock
   const metadata = item.metadata || {}
 
@@ -21,9 +21,13 @@ function DocumentViewer({ item, selected, onOpen }) {
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-black text-ink">{item.title}</h3>
           <p className="text-sm capitalize text-[#527b70]">{metadata.document_type || item.type} - {metadata.document_date || item.source}</p>
-          <p className={`pill mt-4 ${statusTone(item.status)}`}>
-            <StatusIcon className="h-3.5 w-3.5" />{item.status}
-          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <p className={`pill ${statusTone(item.status)}`}>
+              <StatusIcon className="h-3.5 w-3.5" />{item.status}
+            </p>
+            {item.owner_name && <span className="chip px-2 py-1 text-[10px]">Owner: {item.owner_name}</span>}
+            {petName && <span className="chip px-2 py-1 text-[10px]">Pet: {petName}</span>}
+          </div>
           {!!metadata.labels?.length && (
             <div className="mt-3 flex flex-wrap gap-1">
               {metadata.labels.slice(0, 3).map((label) => <span className="chip px-2 py-1 text-[10px]" key={label}>{label}</span>)}

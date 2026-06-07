@@ -19,7 +19,7 @@ function SelectDocumentPanel() {
 }
 
 function ContentPage() {
-  const { selectedPetId, fetchPets, fetchAdminPets } = usePetStore()
+  const { selectedPetId, pets, fetchPets, fetchAdminPets } = usePetStore()
   const user = useAuthStore((state) => state.user)
   const [items, setItems] = useState([])
   const [search, setSearch] = useState('')
@@ -81,6 +81,7 @@ function ContentPage() {
 
   const readyCount = items.filter((item) => item.status === 'ready').length
   const processingCount = items.filter((item) => item.status === 'processing').length
+  const petsById = useMemo(() => Object.fromEntries(pets.map((pet) => [pet._id, pet])), [pets])
 
   return (
     <div className="space-y-5">
@@ -147,7 +148,13 @@ function ContentPage() {
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.86fr)]">
           <section className="grid content-start gap-4 md:grid-cols-2">
             {filteredItems.map((item) => (
-              <DocumentViewer key={item._id} item={item} selected={selectedItem?._id === item._id} onOpen={openDetail} />
+              <DocumentViewer
+                key={item._id}
+                item={item}
+                petName={petsById[item.pet_id]?.name}
+                selected={selectedItem?._id === item._id}
+                onOpen={openDetail}
+              />
             ))}
             {filteredItems.length === 0 && (
               <div className="empty-state rounded-[26px] p-8 text-center md:col-span-2">

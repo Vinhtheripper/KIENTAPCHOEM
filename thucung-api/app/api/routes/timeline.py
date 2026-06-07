@@ -1,12 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import get_current_user
+from app.models.timeline_event import timeline_event_document
+from app.schemas.timeline import TimelineEventCreate, TimelineEventUpdate
 from app.services.repositories.content_repository import ContentRepository
 from app.services.repositories.pet_repository import PetRepository
+from app.services.repositories.timeline_repository import TimelineRepository
 
 router = APIRouter()
 pets = PetRepository()
 content = ContentRepository()
+timeline = TimelineRepository()
+
+
+def normalize_event_type(value: str | None) -> str:
+    return (value or "medical_note").strip().lower()
+
+
+def timeline_event_row(event: dict) -> dict:
+    return {
+        "id": event["_id"],
+        "source": "timeline_event",
+        "type": normalize_event_type(event.get("type")),
+        "title": event.get("title", "Timeline event"),
+        "date": event.get("date") or event.get("created_at"),
+        "status": event.get("status", "planned"),
+        "labels": event.get("labels", []),
+        "notes": event.get("notes"),
+        "content_id": event.get("related_content_id"),
+        "event_id": event["_id"],
+        "created_by": event.get("created_by"),
+    }
 
 
 @router.get("")
@@ -17,11 +41,12 @@ async def medical_timeline(pet_id: str, current_user: dict = Depends(get_current
         raise HTTPException(status_code=404, detail="Pet not found")
 
     items = await content.list_items(current_user["_id"], pet_id, admin=is_admin)
-    events = []
+    event_rows = await timeline.list_for_pet(current_user["_id"], pet_id, admin=is_admin)
+    events = [timeline_event_row(event) for event in event_rows]
 
     for item in items:
         metadata = item.get("metadata") or {}
-        event_type = metadata.get("document_type") or item.get("type") or "content"
+        event_type = normalize_event_type(metadata.get("document_type") or item.get("type") or "content")
         events.append(
             {
                 "id": item["_id"],
@@ -66,3 +91,36 @@ async def medical_timeline(pet_id: str, current_user: dict = Depends(get_current
 
     events.sort(key=lambda item: str(item.get("date") or ""), reverse=True)
     return {"pet": pet, "events": events}
+
+
+@router.post("/events")
+async def create_timeline_event(payload: TimelineEventCreate, current_user: dict = Depends(get_current_user)):
+    is_admin = current_user.get("role") == "admin"
+    pet = await pets.get(payload.pet_id, current_user["_id"], admin=is_admin)
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+
+    data = payload.model_dump()
+    pet_id = data.pop("pet_id")
+    data["type"] = normalize_event_type(data.get("type"))
+    event = await timeline.create(timeline_event_document(pet["owner_id"], pet_id, data, current_user["_id"]))
+    return timeline_event_row(event)
+
+
+@router.patch("/events/{event_id}")
+async def update_timeline_event(event_id: str, payload: TimelineEventUpdate, current_user: dict = Depends(get_current_user)):
+    is_admin = current_user.get("role") == "admin"
+    event = await timeline.get(event_id, current_user["_id"], admin=is_admin)
+    if not event:
+        raise HTTPException(status_code=404, detail="Timeline event not found")
+    updated = await timeline.update(event_id, current_user["_id"], payload.model_dump(), admin=is_admin)
+    return timeline_event_row(updated)
+
+
+@router.delete("/events/{event_id}")
+async def delete_timeline_event(event_id: str, current_user: dict = Depends(get_current_user)):
+    is_admin = current_user.get("role") == "admin"
+    deleted = await timeline.delete(event_id, current_user["_id"], admin=is_admin)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Timeline event not found")
+    return {"ok": True}

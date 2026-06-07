@@ -6,7 +6,13 @@ This AI assistant does not replace professional veterinary diagnosis.
 """
 
 
-def build_rag_prompt(question: str, context_chunks: list[dict], history: list[dict], pet_profile: dict | None = None) -> str:
+def build_rag_prompt(
+    question: str,
+    context_chunks: list[dict],
+    history: list[dict],
+    pet_profile: dict | None = None,
+    timeline_events: list[dict] | None = None,
+) -> str:
     context = "\n\n".join(
         (
             f"[Source {index + 1}: {chunk.get('metadata', {}).get('title', 'uploaded content')} | "
@@ -21,9 +27,18 @@ def build_rag_prompt(question: str, context_chunks: list[dict], history: list[di
         for key, value in (pet_profile or {}).items()
         if key not in {"_id", "owner_id"} and value not in (None, "", [])
     )
+    timeline = "\n".join(
+        (
+            f"- {event.get('date') or 'no date'} | {event.get('type', 'event')} | "
+            f"{event.get('title', 'Timeline event')} | status={event.get('status', 'planned')} | "
+            f"notes={event.get('notes') or ''}"
+        )
+        for event in (timeline_events or [])[:10]
+    )
     return (
         f"{SYSTEM_PROMPT}\n\n"
         f"Structured pet profile:\n{profile}\n\n"
+        f"Relevant medical timeline:\n{timeline}\n\n"
         f"Conversation memory:\n{memory}\n\n"
         f"Retrieved pet context:\n{context}\n\n"
         f"User question:\n{question}\n\nAnswer:"

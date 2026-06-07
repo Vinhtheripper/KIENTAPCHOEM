@@ -29,6 +29,7 @@ function PetCard({ pet, selected, onSelect, onDelete, onEdit }) {
               <div className="min-w-0">
                 <p className="truncate text-lg font-black text-ink">{pet.name}</p>
                 <p className="text-sm capitalize text-[#527b70]">{pet.species} {pet.breed ? `- ${pet.breed}` : ''}</p>
+                {pet.owner_name && <span className="chip mt-2 bg-white">Owner: {pet.owner_name}</span>}
                 {selected && <span className="mt-2 inline-flex rounded-full bg-mint-500 px-3 py-1 text-xs font-black text-white">Selected</span>}
               </div>
             </div>

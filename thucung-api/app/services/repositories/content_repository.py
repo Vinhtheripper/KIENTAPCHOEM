@@ -78,6 +78,18 @@ class ContentRepository:
             rows.append(document)
         return rows
 
+    async def get_candidate_chunks_for_pet(self, owner_id: str, pet_id: str, categories: set[str] | None = None, limit: int = 150) -> list[dict]:
+        query = {"owner_id": owner_id, "pet_id": pet_id}
+        if categories:
+            query["metadata.categories"] = {"$in": list(categories)}
+        rows = []
+        async for document in self.chunks.find(query).sort("created_at", -1).limit(limit):
+            document["_id"] = str(document["_id"])
+            rows.append(document)
+        if rows or not categories:
+            return rows
+        return await self.get_candidate_chunks_for_pet(owner_id, pet_id, categories=None, limit=limit)
+
     async def delete_for_pet(self, owner_id: str, pet_id: str) -> None:
         await self.items.delete_many({"owner_id": owner_id, "pet_id": pet_id})
         await self.chunks.delete_many({"owner_id": owner_id, "pet_id": pet_id})

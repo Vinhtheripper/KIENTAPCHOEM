@@ -8,9 +8,9 @@ class RetrievalService:
         self.classifier = QueryClassifier()
 
     async def retrieve(self, owner_id: str, pet_id: str, query: str, limit: int = 5) -> list[dict]:
-        chunks = await self.content_repository.get_chunks_for_pet(owner_id, pet_id)
         query_terms = {term.lower() for term in query.split() if len(term) > 2}
         query_categories = self.classifier.classify(query)
+        chunks = await self.content_repository.get_candidate_chunks_for_pet(owner_id, pet_id, query_categories)
 
         def score(chunk: dict) -> int:
             text = chunk.get("text", "").lower()
