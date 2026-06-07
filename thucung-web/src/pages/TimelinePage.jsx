@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CalendarDays, FileText, Plus, RefreshCw, Stethoscope, Syringe, Trash2 } from 'lucide-react'
+import { CalendarDays, FileText, Plus, RefreshCw, Save, Stethoscope, Syringe, Trash2, X } from 'lucide-react'
 import ContentDetailPanel from '../components/content/ContentDetailPanel.jsx'
 import { adminApi } from '../api/adminApi.js'
 import { contentApi } from '../api/contentApi.js'
@@ -63,6 +63,8 @@ function TimelinePage() {
   const pushToast = useToastStore((state) => state.push)
   const [events, setEvents] = useState([])
   const [selectedItem, setSelectedItem] = useState(null)
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [eventForm, setEventForm] = useState(null)
   const [contentItems, setContentItems] = useState([])
   const [detailLoading, setDetailLoading] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -156,6 +158,31 @@ function TimelinePage() {
     await loadTimeline()
   }
 
+  const openEvent = (event) => {
+    setSelectedEvent(event)
+    setEventForm({
+      type: event.type || 'medical_note',
+      title: event.title || '',
+      date: event.date ? String(event.date).slice(0, 10) : '',
+      status: event.status || 'planned',
+      labels: (event.labels || []).join(', '),
+      notes: event.notes || '',
+      content_ids: event.content_ids || (event.content_id ? [event.content_id] : []),
+    })
+  }
+
+  const saveEvent = async () => {
+    if (!selectedEvent?.event_id) return
+    await timelineApi.update(selectedEvent.event_id, {
+      ...eventForm,
+      labels: eventForm.labels.split(',').map((label) => label.trim()).filter(Boolean),
+      related_content_id: eventForm.content_ids[0] || null,
+    })
+    pushToast('Timeline event updated.')
+    setSelectedEvent(null)
+    await loadTimeline()
+  }
+
   const groupedStats = useMemo(() => {
     const planned = events.filter((event) => event.status === 'planned').length
     const done = events.filter((event) => event.status === 'done').length
@@ -185,10 +212,10 @@ function TimelinePage() {
         <span className="chip mt-2 px-2 py-1 text-[10px]">{sourceLabel(event.source)}</span>
       </div>
       <div>
-        <p className="flex items-center gap-2 font-black text-ink">
+        <button className="flex items-center gap-2 text-left font-black text-ink" type="button" onClick={() => openEvent(event)}>
           {event.type === 'vaccination' ? <Syringe className="h-4 w-4" /> : event.type === 'recheck' ? <Stethoscope className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
           {event.title}
-        </p>
+        </button>
         {event.notes && <p className="mt-2 text-sm leading-6 text-[#527b70]">{event.notes}</p>}
         <div className="mt-3 flex flex-wrap gap-2">
           <span className={`chip px-2 py-1 text-[10px] ${event.status === 'overdue' ? 'accent-coral' : ''}`}>Status: {event.status}</span>
@@ -199,6 +226,7 @@ function TimelinePage() {
             <button className="btn-secondary min-h-10 px-3 py-2 text-sm" type="button" onClick={() => openContent(contentId)} key={contentId}>Open file {index + 1}</button>
           ))}
           {!event.content_ids?.length && event.content_id && <button className="btn-secondary min-h-10 px-3 py-2 text-sm" type="button" onClick={() => openContent(event.content_id)}>Open file</button>}
+          <button className="btn-secondary min-h-10 px-3 py-2 text-sm" type="button" onClick={() => openEvent(event)}>Details</button>
           {event.event_id && event.status !== 'done' && <button className="btn-secondary min-h-10 px-3 py-2 text-sm" type="button" onClick={() => markDone(event)}>Mark done</button>}
           {event.event_id && <button className="inline-flex min-h-10 items-center gap-2 rounded-2xl bg-red-50 px-3 py-2 text-sm font-black text-red-600" type="button" onClick={() => deleteEvent(event)}><Trash2 className="h-4 w-4" />Delete</button>}
         </div>
@@ -299,6 +327,38 @@ function TimelinePage() {
           <ContentDetailPanel item={selectedItem} loading={detailLoading} onClose={() => setSelectedItem(null)} onUpdated={(updated) => setSelectedItem(updated)} />
         </aside>
       </div>
+      {selectedEvent && eventForm && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[#17312b]/35 p-4 backdrop-blur-sm">
+          <div className="surface-card max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[28px] p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-black uppercase text-[#527b70]">Timeline event</p>
+                <h2 className="text-2xl font-black text-ink">{selectedEvent.title}</h2>
+              </div>
+              <button className="btn-secondary h-10 w-10 rounded-2xl p-0" type="button" onClick={() => setSelectedEvent(null)} aria-label="Close event detail"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <select className="field" value={eventForm.type} onChange={(event) => setEventForm({ ...eventForm, type: event.target.value })} disabled={!selectedEvent.event_id}>
+                {eventTypes.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+              </select>
+              <select className="field" value={eventForm.status} onChange={(event) => setEventForm({ ...eventForm, status: event.target.value })} disabled={!selectedEvent.event_id}>
+                {statuses.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+              </select>
+              <input className="field sm:col-span-2" value={eventForm.title} onChange={(event) => setEventForm({ ...eventForm, title: event.target.value })} disabled={!selectedEvent.event_id} />
+              <input className="field" type="date" value={eventForm.date} onChange={(event) => setEventForm({ ...eventForm, date: event.target.value })} disabled={!selectedEvent.event_id} />
+              <input className="field" placeholder="Labels" value={eventForm.labels} onChange={(event) => setEventForm({ ...eventForm, labels: event.target.value })} disabled={!selectedEvent.event_id} />
+              <select className="field min-h-28 sm:col-span-2" multiple value={eventForm.content_ids} onChange={(event) => setEventForm({ ...eventForm, content_ids: Array.from(event.target.selectedOptions).map((option) => option.value) })} disabled={!selectedEvent.event_id}>
+                {contentItems.map((item) => <option value={item._id} key={item._id}>{item.title}</option>)}
+              </select>
+              <textarea className="field min-h-24 resize-none sm:col-span-2" value={eventForm.notes} onChange={(event) => setEventForm({ ...eventForm, notes: event.target.value })} disabled={!selectedEvent.event_id} />
+            </div>
+            <div className="mt-5 flex flex-wrap gap-3">
+              {selectedEvent.event_id && <button className="btn-primary" type="button" onClick={saveEvent}><Save className="h-4 w-4" />Save event</button>}
+              {eventForm.content_ids.map((contentId, index) => <button className="btn-secondary" type="button" onClick={() => openContent(contentId)} key={contentId}>Open file {index + 1}</button>)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

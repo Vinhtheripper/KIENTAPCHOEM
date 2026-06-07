@@ -12,7 +12,7 @@ function RegisterPage() {
     event.preventDefault()
     try {
       await register(form)
-      navigate('/app')
+      navigate('/app/onboarding')
     } catch {
       // Store handles the user-facing error message.
     }

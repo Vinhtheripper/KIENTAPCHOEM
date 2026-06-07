@@ -1,9 +1,10 @@
-import { Bot, CalendarDays, FileText, HeartPulse, Home, Settings, UploadCloud } from 'lucide-react'
+import { Bot, CalendarDays, ClipboardList, FileText, HeartPulse, Home, Settings, UploadCloud } from 'lucide-react'
 import { Users } from 'lucide-react'
 
 export const navLinks = [
   { to: '/app', label: 'Dashboard', icon: Home, end: true, roles: ['pet_owner', 'admin'] },
   { to: '/app/users', label: 'Users', icon: Users, roles: ['admin'] },
+  { to: '/app/summary', label: 'Summary', icon: ClipboardList, roles: ['pet_owner'] },
   { to: '/app/pets', label: 'Pets', icon: HeartPulse, roles: ['pet_owner'] },
   { to: '/app/pets', label: 'All Pets', icon: HeartPulse, roles: ['admin'] },
   { to: '/app/upload', label: 'Upload', icon: UploadCloud, roles: ['pet_owner'] },

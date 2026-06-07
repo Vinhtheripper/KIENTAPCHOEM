@@ -48,5 +48,15 @@ async def list_all_content(owner_id: str | None = None, pet_id: str | None = Non
 
 
 @router.get("/audit")
-async def list_audit_logs(_: dict = Depends(require_admin)):
-    return await audit.list_recent()
+async def list_audit_logs(action: str | None = None, pet_id: str | None = None, _: dict = Depends(require_admin)):
+    user_rows = await users.list_all()
+    users_by_id = {user["_id"]: user for user in user_rows}
+    logs = await audit.list_recent(action=action, pet_id=pet_id)
+    return [
+        {
+            **row,
+            "actor_name": users_by_id.get(row.get("actor_id"), {}).get("full_name", row.get("actor_id")),
+            "actor_email": users_by_id.get(row.get("actor_id"), {}).get("email"),
+        }
+        for row in logs
+    ]

@@ -14,6 +14,16 @@ const initialMetadata = {
   notes: '',
 }
 
+const labelSuggestions = {
+  vaccination: ['vaccine', 'rabies', 'booster', 'tiêm phòng'],
+  lab_result: ['blood test', 'kidney', 'liver', 'xét nghiệm'],
+  prescription: ['prescription', 'dosage', 'medicine', 'đơn thuốc'],
+  symptom_note: ['symptom', 'vomit', 'fever', 'triệu chứng'],
+  diet: ['diet', 'nutrition', 'food', 'dinh dưỡng'],
+  medical_record: ['visit', 'diagnosis', 'medical record', 'giấy khám'],
+  image: ['image', 'photo', 'skin', 'hình ảnh'],
+}
+
 function UploadPage() {
   const { pets, selectedPetId, selectPet, fetchPets, fetchAdminPets } = usePetStore()
   const user = useAuthStore((state) => state.user)
@@ -56,6 +66,12 @@ function UploadPage() {
     pushToast('Upload received. Processing content...')
     setMetadata(initialMetadata)
     setStep(3)
+  }
+
+  const addLabel = (label) => {
+    const current = metadata.labels.split(',').map((item) => item.trim()).filter(Boolean)
+    if (current.includes(label)) return
+    setMetadata({ ...metadata, labels: [...current, label].join(', ') })
   }
 
   return (
@@ -119,6 +135,12 @@ function UploadPage() {
                   <option value="other">Other</option>
                 </select>
                 <input className="field sm:col-span-2" placeholder="Labels: vaccine, rabies, xét nghiệm..." value={metadata.labels} onChange={(e) => setMetadata({ ...metadata, labels: e.target.value })} />
+                <div className="sm:col-span-2">
+                  <p className="mb-2 text-sm font-black text-[#527b70]">Suggested labels</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(labelSuggestions[metadata.document_type] || []).map((label) => <button className="chip" type="button" onClick={() => addLabel(label)} key={label}>{label}</button>)}
+                  </div>
+                </div>
                 <textarea className="field min-h-28 resize-none sm:col-span-2" placeholder="Notes for retrieval" value={metadata.notes} onChange={(e) => setMetadata({ ...metadata, notes: e.target.value })} />
               </div>
               <button className="btn-primary mt-4" type="button" disabled={!selectedPetId} onClick={() => setStep(3)}>Continue to upload</button>

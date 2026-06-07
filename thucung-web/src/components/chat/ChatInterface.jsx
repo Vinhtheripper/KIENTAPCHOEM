@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bot, Sparkles } from 'lucide-react'
+import { AlertTriangle, Bot, Sparkles } from 'lucide-react'
 import useChatStore from '../../store/chatStore.js'
 import ChatInput from './ChatInput.jsx'
 import ChatMessage from './ChatMessage.jsx'
@@ -13,6 +13,8 @@ function ChatInterface({ petId, onCitationClick }) {
     'Có dấu hiệu nào cần chú ý không?',
     'Tóm tắt các giấy khám gần đây',
   ]
+  const emergencyWords = ['khó thở', 'kho tho', 'co giật', 'co giat', 'ra máu', 'ra mau', 'ngất', 'ngat', 'poison', 'seizure', 'bleeding', 'breathing']
+  const emergencyHit = emergencyWords.some((word) => draft.toLowerCase().includes(word))
 
   return (
     <section className="surface-card flex h-[calc(100vh-190px)] min-h-[620px] flex-col rounded-[28px] p-4">
@@ -38,6 +40,12 @@ function ChatInterface({ petId, onCitationClick }) {
         {loading && <ChatMessage message={{ role: 'assistant', content: 'Thinking with your pet records...' }} />}
       </div>
       <div className="mt-4">
+        {emergencyHit && (
+          <div className="mb-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold leading-6 text-red-700">
+            <AlertTriangle className="mr-2 inline h-4 w-4" />
+            This may be urgent. Contact a veterinarian or emergency clinic now, especially if symptoms are severe or worsening.
+          </div>
+        )}
         {petId && (
           <div className="mb-3 flex flex-wrap gap-2">
             {quickPrompts.map((item) => <button className="chip px-3 py-2 text-[11px]" type="button" onClick={() => setDraft(item)} key={item}>{item}</button>)}

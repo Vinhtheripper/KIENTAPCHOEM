@@ -1,17 +1,25 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from './components/layout/AppShell.jsx'
-import AdminUsersPage from './pages/AdminUsersPage.jsx'
-import ChatPage from './pages/ChatPage.jsx'
-import ContentPage from './pages/ContentPage.jsx'
-import DashboardPage from './pages/DashboardPage.jsx'
-import LandingPage from './pages/LandingPage.jsx'
-import LoginPage from './pages/LoginPage.jsx'
-import PetProfilePage from './pages/PetProfilePage.jsx'
-import RegisterPage from './pages/RegisterPage.jsx'
-import SettingsPage from './pages/SettingsPage.jsx'
-import TimelinePage from './pages/TimelinePage.jsx'
-import UploadPage from './pages/UploadPage.jsx'
 import useAuthStore from './store/authStore.js'
+
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'))
+const ChatPage = lazy(() => import('./pages/ChatPage.jsx'))
+const ContentPage = lazy(() => import('./pages/ContentPage.jsx'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'))
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'))
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'))
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage.jsx'))
+const PetProfilePage = lazy(() => import('./pages/PetProfilePage.jsx'))
+const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
+const SummaryPage = lazy(() => import('./pages/SummaryPage.jsx'))
+const TimelinePage = lazy(() => import('./pages/TimelinePage.jsx'))
+const UploadPage = lazy(() => import('./pages/UploadPage.jsx'))
+
+function PageLoader() {
+  return <div className="p-8"><div className="skeleton h-40 rounded-[26px]" /></div>
+}
 
 function ProtectedRoute({ children }) {
   const token = useAuthStore((state) => state.token)
@@ -30,28 +38,32 @@ function OwnerRoute({ children }) {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route
-        path="/app"
-        element={
-          <ProtectedRoute>
-            <AppShell />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<DashboardPage />} />
-        <Route path="users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
-        <Route path="pets" element={<PetProfilePage />} />
-        <Route path="upload" element={<OwnerRoute><UploadPage /></OwnerRoute>} />
-        <Route path="content" element={<ContentPage />} />
-        <Route path="timeline" element={<TimelinePage />} />
-        <Route path="chat" element={<OwnerRoute><ChatPage /></OwnerRoute>} />
-        <Route path="settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
-      </Route>
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <AppShell />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="onboarding" element={<OwnerRoute><OnboardingPage /></OwnerRoute>} />
+          <Route path="summary" element={<OwnerRoute><SummaryPage /></OwnerRoute>} />
+          <Route path="users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+          <Route path="pets" element={<PetProfilePage />} />
+          <Route path="upload" element={<OwnerRoute><UploadPage /></OwnerRoute>} />
+          <Route path="content" element={<ContentPage />} />
+          <Route path="timeline" element={<TimelinePage />} />
+          <Route path="chat" element={<OwnerRoute><ChatPage /></OwnerRoute>} />
+          <Route path="settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+        </Route>
+      </Routes>
+    </Suspense>
   )
 }
 

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { ExternalLink, FileText, Image, Layers3, NotebookText, RefreshCw, Save, Settings2, X } from 'lucide-react'
+import { CalendarPlus, ExternalLink, FileText, Image, Layers3, NotebookText, RefreshCw, Save, Settings2, X } from 'lucide-react'
 import apiClient from '../../api/client.js'
 import { contentApi } from '../../api/contentApi.js'
+import { timelineApi } from '../../api/timelineApi.js'
 import useToastStore from '../../store/toastStore.js'
 
 const tabs = [
@@ -110,6 +111,12 @@ function ContentDetailInner({ item, onClose, onUpdated }) {
   const [form, setForm] = useState(() => makeMetadataForm(item))
   const [saving, setSaving] = useState(false)
   const [retrying, setRetrying] = useState(false)
+  const [timelineForm, setTimelineForm] = useState({
+    title: item.title || '',
+    type: metadata.document_type || 'medical_record',
+    date: metadata.document_date || '',
+    status: 'done',
+  })
 
   const refreshDetail = async (contentId) => {
     const detail = await contentApi.detail(contentId)
@@ -142,6 +149,21 @@ function ContentDetailInner({ item, onClose, onUpdated }) {
     } finally {
       setRetrying(false)
     }
+  }
+
+  const linkToTimeline = async () => {
+    await timelineApi.create({
+      pet_id: item.pet_id,
+      title: timelineForm.title,
+      type: timelineForm.type,
+      date: timelineForm.date || null,
+      status: timelineForm.status,
+      labels: metadata.labels || [],
+      notes: metadata.notes || null,
+      related_content_id: item._id,
+      content_ids: [item._id],
+    })
+    pushToast('Content linked to timeline.')
   }
 
   return (
@@ -211,6 +233,21 @@ function ContentDetailInner({ item, onClose, onUpdated }) {
             ) : (
               <EmptyBlock title="No notes">Use notes for short clinical context, visit summary, or owner observations.</EmptyBlock>
             )}
+            <div className="rounded-[22px] border border-[#d8ede5] bg-white p-4">
+              <p className="mb-3 flex items-center gap-2 font-black text-ink"><CalendarPlus className="h-4 w-4" />Link this document to timeline</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input className="field sm:col-span-2" value={timelineForm.title} onChange={(event) => setTimelineForm({ ...timelineForm, title: event.target.value })} />
+                <select className="field" value={timelineForm.type} onChange={(event) => setTimelineForm({ ...timelineForm, type: event.target.value })}>
+                  <option value="medical_record">Medical record</option>
+                  <option value="vaccination">Vaccination</option>
+                  <option value="lab_result">Lab result</option>
+                  <option value="prescription">Prescription</option>
+                  <option value="recheck">Recheck</option>
+                </select>
+                <input className="field" type="date" value={timelineForm.date} onChange={(event) => setTimelineForm({ ...timelineForm, date: event.target.value })} />
+              </div>
+              <button className="btn-secondary mt-3" type="button" onClick={linkToTimeline}><CalendarPlus className="h-4 w-4" />Create linked event</button>
+            </div>
           </div>
         )}
 

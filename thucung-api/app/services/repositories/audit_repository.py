@@ -30,9 +30,14 @@ class AuditRepository:
             }
         )
 
-    async def list_recent(self, limit: int = 120) -> list[dict]:
+    async def list_recent(self, action: str | None = None, pet_id: str | None = None, limit: int = 120) -> list[dict]:
+        query = {}
+        if action:
+            query["action"] = action
+        if pet_id:
+            query["pet_id"] = pet_id
         rows = []
-        async for document in self.collection.find({}).sort("created_at", -1).limit(limit):
+        async for document in self.collection.find(query).sort("created_at", -1).limit(limit):
             document["_id"] = str(document["_id"])
             rows.append(document)
         return rows
