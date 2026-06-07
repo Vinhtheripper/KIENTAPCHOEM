@@ -24,3 +24,11 @@ class UserRepository:
         if document:
             document["_id"] = str(document["_id"])
         return document
+
+    async def list_all(self) -> list[dict]:
+        users = []
+        async for document in self.collection.find({}).sort("created_at", -1):
+            document["_id"] = str(document["_id"])
+            document.pop("password_hash", None)
+            users.append(document)
+        return users

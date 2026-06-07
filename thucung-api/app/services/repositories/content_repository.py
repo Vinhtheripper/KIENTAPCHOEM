@@ -23,12 +23,33 @@ class ContentRepository:
             update["metadata"] = metadata
         await self.items.update_one({"_id": ObjectId(content_id)}, {"$set": update})
 
-    async def list_items(self, owner_id: str, pet_id: str | None = None) -> list[dict]:
-        query = {"owner_id": owner_id}
+    async def list_items(self, owner_id: str | None, pet_id: str | None = None, admin: bool = False) -> list[dict]:
+        query = {} if admin else {"owner_id": owner_id}
+        if owner_id and admin:
+            query["owner_id"] = owner_id
         if pet_id:
             query["pet_id"] = pet_id
         rows = []
         async for document in self.items.find(query).sort("created_at", -1):
+            document["_id"] = str(document["_id"])
+            rows.append(document)
+        return rows
+
+    async def get_item(self, content_id: str, owner_id: str | None = None, admin: bool = False) -> dict | None:
+        query = {"_id": ObjectId(content_id)}
+        if not admin:
+            query["owner_id"] = owner_id
+        document = await self.items.find_one(query)
+        if document:
+            document["_id"] = str(document["_id"])
+        return document
+
+    async def get_chunks_for_content(self, content_id: str, owner_id: str | None = None, admin: bool = False) -> list[dict]:
+        query = {"content_id": content_id}
+        if not admin:
+            query["owner_id"] = owner_id
+        rows = []
+        async for document in self.chunks.find(query).sort("chunk_index", 1):
             document["_id"] = str(document["_id"])
             rows.append(document)
         return rows

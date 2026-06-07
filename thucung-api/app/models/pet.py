@@ -15,6 +15,14 @@ class Pet(MongoModel):
     avatar_url: str | None = None
     allergies: list[str] = []
     chronic_conditions: list[str] = []
+    microchip_id: str | None = None
+    sterilized: bool | None = None
+    diet: str | None = None
+    medications: list[str] = []
+    vaccines: list[str] = []
+    vet_clinic: str | None = None
+    emergency_contact: str | None = None
+    notes: str | None = None
     created_at: datetime | None = None
 
 

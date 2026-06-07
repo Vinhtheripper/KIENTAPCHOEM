@@ -3,24 +3,40 @@ import { DatabaseZap, FileUp } from 'lucide-react'
 import UploadDropzone from '../components/upload/UploadDropzone.jsx'
 import UploadProgress from '../components/upload/UploadProgress.jsx'
 import { contentApi } from '../api/contentApi.js'
+import useAuthStore from '../store/authStore.js'
 import usePetStore from '../store/petStore.js'
 
+const initialMetadata = {
+  document_date: '',
+  document_type: 'medical_record',
+  labels: '',
+  notes: '',
+}
+
 function UploadPage() {
-  const { pets, selectedPetId, selectPet, fetchPets } = usePetStore()
+  const { pets, selectedPetId, selectPet, fetchPets, fetchAdminPets } = usePetStore()
+  const user = useAuthStore((state) => state.user)
   const [progress, setProgress] = useState(0)
   const [latest, setLatest] = useState(null)
+  const [metadata, setMetadata] = useState(initialMetadata)
+  const selectedPet = pets.find((pet) => pet._id === selectedPetId)
+  const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
-    fetchPets().catch(() => {})
-  }, [fetchPets])
+    ;(isAdmin ? fetchAdminPets : fetchPets)().catch(() => {})
+  }, [fetchPets, fetchAdminPets, isAdmin])
 
   const upload = async (file) => {
     if (!selectedPetId) return
     setProgress(1)
-    const item = await contentApi.upload(selectedPetId, file, (event) => {
+    const item = await contentApi.upload(selectedPetId, file, {
+      ...metadata,
+      labels: metadata.labels.split(',').map((label) => label.trim()).filter(Boolean),
+    }, (event) => {
       setProgress(Math.round((event.loaded * 100) / (event.total || event.loaded)))
     })
     setLatest(item)
+    setMetadata(initialMetadata)
   }
 
   return (
@@ -31,19 +47,36 @@ function UploadPage() {
           <h1 className="page-title mt-4">Knowledge upload</h1>
           <p className="mt-2 max-w-2xl text-[#527b70]">Every upload becomes one content item, then text, transcript, chunks, embeddings, and retrieval context.</p>
         </div>
-        <div className="surface-card rounded-[22px] p-3">
+        {isAdmin ? <div className="surface-card rounded-[22px] p-3">
           <select className="field min-w-[260px]" value={selectedPetId || ''} onChange={(e) => selectPet(e.target.value)}>
             <option value="">Select pet</option>
             {pets.map((pet) => <option value={pet._id} key={pet._id}>{pet.name}</option>)}
           </select>
-        </div>
+        </div> : selectedPet && <div className="chip accent-green">Uploading for {selectedPet.name}</div>}
       </div>
-      <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <UploadDropzone onFile={upload} disabled={!selectedPetId} />
         <aside className="surface-card rounded-[26px] p-5">
           <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#edf6ff] text-[#25608a]"><DatabaseZap className="h-6 w-6" /></div>
-          <h2 className="mt-4 text-xl font-black text-ink">Processing pipeline</h2>
-          <div className="mt-4 space-y-3 text-sm font-bold text-[#527b70]">
+          <h2 className="mt-4 text-xl font-black text-ink">Document metadata</h2>
+          <p className="mt-1 text-sm text-[#527b70]">Labels help hybrid retrieval route questions to the most relevant files.</p>
+          <div className="mt-4 space-y-3">
+            <input className="field" type="date" value={metadata.document_date} onChange={(e) => setMetadata({ ...metadata, document_date: e.target.value })} />
+            <select className="field" value={metadata.document_type} onChange={(e) => setMetadata({ ...metadata, document_type: e.target.value })}>
+              <option value="medical_record">Medical record</option>
+              <option value="vaccination">Vaccination / Tiêm phòng</option>
+              <option value="lab_result">Lab result / Xét nghiệm</option>
+              <option value="prescription">Prescription / Đơn thuốc</option>
+              <option value="symptom_note">Symptom note / Triệu chứng</option>
+              <option value="diet">Diet / Dinh dưỡng</option>
+              <option value="image">Image / Hình ảnh</option>
+              <option value="other">Other</option>
+            </select>
+            <input className="field" placeholder="Labels: vaccine, rabies, xét nghiệm..." value={metadata.labels} onChange={(e) => setMetadata({ ...metadata, labels: e.target.value })} />
+            <textarea className="field min-h-24 resize-none" placeholder="Notes for retrieval" value={metadata.notes} onChange={(e) => setMetadata({ ...metadata, notes: e.target.value })} />
+          </div>
+          <h3 className="mt-6 text-sm font-black uppercase text-[#527b70]">Processing pipeline</h3>
+          <div className="mt-3 space-y-3 text-sm font-bold text-[#527b70]">
             {['Create content item', 'Extract text or transcript', 'Split into searchable chunks', 'Attach to pet chat context'].map((step, index) => (
               <div className="flex items-center gap-3 rounded-2xl bg-[#f8fcfa] px-3 py-3" key={step}>
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-white text-xs text-ink">{index + 1}</span>

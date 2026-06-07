@@ -1,15 +1,18 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Bot, FileText, HeartPulse, Plus, ShieldCheck, Syringe } from 'lucide-react'
+import useAuthStore from '../store/authStore.js'
 import usePetStore from '../store/petStore.js'
 import PetCard from '../components/pet/PetCard.jsx'
 
 function DashboardPage() {
-  const { pets, selectedPetId, selectPet, fetchPets, deletePet } = usePetStore()
+  const user = useAuthStore((state) => state.user)
+  const { pets, selectedPetId, selectPet, fetchPets, fetchAdminPets, deletePet } = usePetStore()
+  const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
-    fetchPets().catch(() => {})
-  }, [fetchPets])
+    ;(isAdmin ? fetchAdminPets : fetchPets)().catch(() => {})
+  }, [fetchPets, fetchAdminPets, isAdmin])
 
   return (
     <div className="space-y-6">

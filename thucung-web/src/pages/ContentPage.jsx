@@ -1,21 +1,40 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileStack, UploadCloud } from 'lucide-react'
+import ContentDetailPanel from '../components/content/ContentDetailPanel.jsx'
 import DocumentViewer from '../components/content/DocumentViewer.jsx'
+import { adminApi } from '../api/adminApi.js'
 import { contentApi } from '../api/contentApi.js'
+import useAuthStore from '../store/authStore.js'
 import usePetStore from '../store/petStore.js'
 
 function ContentPage() {
-  const { selectedPetId, fetchPets } = usePetStore()
+  const { selectedPetId, fetchPets, fetchAdminPets } = usePetStore()
+  const user = useAuthStore((state) => state.user)
   const [items, setItems] = useState([])
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
-    fetchPets().catch(() => {})
-  }, [fetchPets])
+    ;(isAdmin ? fetchAdminPets : fetchPets)().catch(() => {})
+  }, [fetchPets, fetchAdminPets, isAdmin])
 
   useEffect(() => {
-    contentApi.list(selectedPetId).then(setItems).catch(() => setItems([]))
-  }, [selectedPetId])
+    const load = isAdmin ? adminApi.content() : contentApi.list(selectedPetId)
+    load.then(setItems).catch(() => setItems([]))
+  }, [selectedPetId, isAdmin])
+
+  const openDetail = async (item) => {
+    setSelectedItem(item)
+    setDetailLoading(true)
+    try {
+      const detail = await contentApi.detail(item._id)
+      setSelectedItem(detail)
+    } finally {
+      setDetailLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -24,8 +43,11 @@ function ContentPage() {
         <h1 className="page-title mt-4">Unified content</h1>
         <p className="mt-2 max-w-2xl text-[#527b70]">Documents, media, transcripts, URLs, and images are tracked with one architecture.</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {items.map((item) => <DocumentViewer key={item._id} item={item} />)}
+      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+        <div className="grid gap-4 md:grid-cols-2">
+          {items.map((item) => <DocumentViewer key={item._id} item={item} onOpen={openDetail} />)}
+        </div>
+        <ContentDetailPanel item={selectedItem} loading={detailLoading} onClose={() => setSelectedItem(null)} />
       </div>
       {items.length === 0 && (
         <div className="empty-state rounded-[26px] p-8 text-center">

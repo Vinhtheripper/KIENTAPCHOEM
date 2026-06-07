@@ -25,8 +25,8 @@ function PetCard({ pet, selected, onSelect, onDelete }) {
       <div className="flex items-start justify-between gap-3">
         <button className="min-w-0 flex-1 text-left" type="button" onClick={() => onSelect?.(pet._id)}>
           <div className="flex items-start gap-3">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#e8f7f1] text-mint-700">
-              <Icon className="h-7 w-7" />
+            <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#e8f7f1] text-mint-700">
+              {pet.avatar_url ? <img className="h-full w-full object-cover" src={pet.avatar_url} alt={`${pet.name} avatar`} /> : <Icon className="h-7 w-7" />}
             </div>
             <div className="min-w-0">
               <p className="truncate text-lg font-black text-ink">{pet.name}</p>
@@ -50,6 +50,11 @@ function PetCard({ pet, selected, onSelect, onDelete }) {
           <span className="rounded-2xl border border-[#d8ede5] bg-white px-2 py-2"><HeartPulse className="mr-1 inline h-3 w-3" />{pet.weight || '--'} kg</span>
           <span className="rounded-2xl border border-[#d8ede5] bg-white px-2 py-2"><Syringe className="mr-1 inline h-3 w-3" />Vaccines</span>
           <span className="rounded-2xl border border-[#d8ede5] bg-white px-2 py-2"><Calendar className="mr-1 inline h-3 w-3" />Notes</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {!!pet.allergies?.length && <span className="chip accent-coral">Allergies: {pet.allergies.slice(0, 2).join(', ')}</span>}
+          {!!pet.chronic_conditions?.length && <span className="chip accent-amber">Conditions: {pet.chronic_conditions.slice(0, 2).join(', ')}</span>}
+          {pet.diet && <span className="chip accent-blue">Diet noted</span>}
         </div>
       </button>
     </article>

@@ -6,6 +6,7 @@ from app.services.ingest.document_ingest_service import DocumentIngestService
 from app.services.ingest.image_ingest_service import ImageIngestService
 from app.services.ingest.video_ingest_service import VideoIngestService
 from app.services.rag.chunking import chunk_text
+from app.services.rag.classifier import QueryClassifier
 from app.services.repositories.content_repository import ContentRepository
 
 
@@ -16,6 +17,7 @@ class ContentIngestService:
         self.videos = VideoIngestService()
         self.embeddings = EmbeddingsService()
         self.content_repository = ContentRepository()
+        self.classifier = QueryClassifier()
 
     def detect_type(self, filename: str) -> str:
         suffix = Path(filename).suffix.lower()
@@ -46,6 +48,10 @@ class ContentIngestService:
                 text = await self.videos.extract_text(file_path)
 
             chunks = []
+            item_metadata = content_item.get("metadata", {}) or {}
+            labels = item_metadata.get("labels", []) or []
+            document_type = item_metadata.get("document_type")
+            categories = sorted(self.classifier.classify(text, labels, document_type))
             for index, chunk in enumerate(chunk_text(text)):
                 embedding = await self.embeddings.embed(chunk)
                 chunks.append(
@@ -56,10 +62,17 @@ class ContentIngestService:
                         index,
                         chunk,
                         embedding=embedding,
-                        metadata={"title": content_item["title"], "type": content_type},
+                        metadata={
+                            "title": content_item["title"],
+                            "type": content_type,
+                            "document_type": document_type,
+                            "document_date": item_metadata.get("document_date"),
+                            "labels": labels,
+                            "categories": sorted(self.classifier.classify(chunk, labels, document_type) or set(categories)),
+                        },
                     )
                 )
             await self.content_repository.save_chunks(chunks)
-            await self.content_repository.mark_item(content_id, "ready", {"chunk_count": len(chunks)})
+            await self.content_repository.mark_item(content_id, "ready", {**item_metadata, "chunk_count": len(chunks), "categories": categories})
         except Exception as exc:
             await self.content_repository.mark_item(content_id, "failed", {"error": str(exc)})

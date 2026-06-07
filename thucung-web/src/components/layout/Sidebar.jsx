@@ -1,8 +1,12 @@
 import { Stethoscope } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-import { navLinks } from './navLinks.jsx'
+import useAuthStore from '../../store/authStore.js'
+import { linksForRole } from './navLinks.jsx'
 
 function Sidebar() {
+  const user = useAuthStore((state) => state.user)
+  const links = linksForRole(user?.role)
+
   return (
     <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/75 bg-white/70 p-5 backdrop-blur-2xl lg:block">
       <div className="mb-8 flex items-center gap-3 rounded-[22px] bg-white/75 p-3 shadow-sm">
@@ -15,7 +19,7 @@ function Sidebar() {
         </div>
       </div>
       <nav className="space-y-2">
-        {navLinks.map(({ to, label, icon: Icon, end }) => (
+        {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}

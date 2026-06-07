@@ -6,10 +6,25 @@ This AI assistant does not replace professional veterinary diagnosis.
 """
 
 
-def build_rag_prompt(question: str, context_chunks: list[dict], history: list[dict]) -> str:
+def build_rag_prompt(question: str, context_chunks: list[dict], history: list[dict], pet_profile: dict | None = None) -> str:
     context = "\n\n".join(
-        f"[Source {index + 1}: {chunk.get('metadata', {}).get('title', 'uploaded content')}]\n{chunk.get('text', '')}"
+        (
+            f"[Source {index + 1}: {chunk.get('metadata', {}).get('title', 'uploaded content')} | "
+            f"type={chunk.get('metadata', {}).get('type', 'unknown')} | "
+            f"labels={', '.join(chunk.get('metadata', {}).get('labels', []))}]\n{chunk.get('text', '')}"
+        )
         for index, chunk in enumerate(context_chunks)
     )
     memory = "\n".join(f"{item['role']}: {item['content']}" for item in history)
-    return f"{SYSTEM_PROMPT}\n\nConversation memory:\n{memory}\n\nRetrieved pet context:\n{context}\n\nUser question:\n{question}\n\nAnswer:"
+    profile = "\n".join(
+        f"{key}: {value}"
+        for key, value in (pet_profile or {}).items()
+        if key not in {"_id", "owner_id"} and value not in (None, "", [])
+    )
+    return (
+        f"{SYSTEM_PROMPT}\n\n"
+        f"Structured pet profile:\n{profile}\n\n"
+        f"Conversation memory:\n{memory}\n\n"
+        f"Retrieved pet context:\n{context}\n\n"
+        f"User question:\n{question}\n\nAnswer:"
+    )

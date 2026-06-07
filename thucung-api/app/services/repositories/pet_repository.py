@@ -20,9 +20,28 @@ class PetRepository:
             pets.append(document)
         return pets
 
+    async def list_all(self, owner_id: str | None = None) -> list[dict]:
+        query = {}
+        if owner_id:
+            query["owner_id"] = owner_id
+        pets = []
+        async for document in self.collection.find(query).sort("created_at", -1):
+            document["_id"] = str(document["_id"])
+            pets.append(document)
+        return pets
+
     async def update(self, pet_id: str, owner_id: str, data: dict) -> dict | None:
         await self.collection.update_one({"_id": ObjectId(pet_id), "owner_id": owner_id}, {"$set": data})
         document = await self.collection.find_one({"_id": ObjectId(pet_id), "owner_id": owner_id})
+        if document:
+            document["_id"] = str(document["_id"])
+        return document
+
+    async def get(self, pet_id: str, owner_id: str | None = None, admin: bool = False) -> dict | None:
+        query = {"_id": ObjectId(pet_id)}
+        if not admin:
+            query["owner_id"] = owner_id
+        document = await self.collection.find_one(query)
         if document:
             document["_id"] = str(document["_id"])
         return document
