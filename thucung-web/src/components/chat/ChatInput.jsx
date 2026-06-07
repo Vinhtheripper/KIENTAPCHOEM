@@ -1,9 +1,6 @@
 import { Send } from 'lucide-react'
-import { useState } from 'react'
 
-function ChatInput({ onSend, disabled }) {
-  const [message, setMessage] = useState('')
-
+function ChatInput({ onSend, disabled, message, setMessage }) {
   const submit = (event) => {
     event.preventDefault()
     if (!message.trim()) return

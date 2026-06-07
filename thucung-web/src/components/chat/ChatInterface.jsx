@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Bot, Sparkles } from 'lucide-react'
 import useChatStore from '../../store/chatStore.js'
 import ChatInput from './ChatInput.jsx'
@@ -5,6 +6,13 @@ import ChatMessage from './ChatMessage.jsx'
 
 function ChatInterface({ petId, onCitationClick }) {
   const { messages, loading, sendMessage } = useChatStore()
+  const [draft, setDraft] = useState('')
+  const quickPrompts = [
+    'Tóm tắt hồ sơ y tế của pet đang chọn',
+    'Lịch tiêm hoặc tái khám tiếp theo là gì?',
+    'Có dấu hiệu nào cần chú ý không?',
+    'Tóm tắt các giấy khám gần đây',
+  ]
 
   return (
     <section className="surface-card flex h-[calc(100vh-190px)] min-h-[620px] flex-col rounded-[28px] p-4">
@@ -22,7 +30,7 @@ function ChatInterface({ petId, onCitationClick }) {
             <p className="mt-4 text-xl font-black text-ink">{petId ? 'Start with a pet-specific question.' : 'Select a pet to start chatting.'}</p>
             <p className="mt-2 text-sm">Try “Summarize my pet’s medical history” or “When is the next vaccine due?”</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
-              {['Review latest upload', 'Explain symptoms', 'Plan vaccine questions'].map((item) => <span className="chip" key={item}>{item}</span>)}
+              {quickPrompts.map((item) => <button className="chip transition hover:border-mint-500" type="button" onClick={() => setDraft(item)} key={item}>{item}</button>)}
             </div>
           </div>
         )}
@@ -30,7 +38,12 @@ function ChatInterface({ petId, onCitationClick }) {
         {loading && <ChatMessage message={{ role: 'assistant', content: 'Thinking with your pet records...' }} />}
       </div>
       <div className="mt-4">
-        <ChatInput disabled={!petId || loading} onSend={(message) => sendMessage({ petId, message })} />
+        {petId && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {quickPrompts.map((item) => <button className="chip px-3 py-2 text-[11px]" type="button" onClick={() => setDraft(item)} key={item}>{item}</button>)}
+          </div>
+        )}
+        <ChatInput disabled={!petId || loading} message={draft} setMessage={setDraft} onSend={(message) => sendMessage({ petId, message })} />
       </div>
     </section>
   )

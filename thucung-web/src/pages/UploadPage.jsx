@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { DatabaseZap, FileUp } from 'lucide-react'
+import { CheckCircle2, DatabaseZap, FileUp } from 'lucide-react'
 import UploadDropzone from '../components/upload/UploadDropzone.jsx'
 import UploadProgress from '../components/upload/UploadProgress.jsx'
 import { contentApi } from '../api/contentApi.js'
@@ -20,6 +20,7 @@ function UploadPage() {
   const [progress, setProgress] = useState(0)
   const [latest, setLatest] = useState(null)
   const [metadata, setMetadata] = useState(initialMetadata)
+  const [step, setStep] = useState(1)
   const pushToast = useToastStore((state) => state.push)
   const selectedPet = pets.find((pet) => pet._id === selectedPetId)
   const isAdmin = user?.role === 'admin'
@@ -54,6 +55,7 @@ function UploadPage() {
     setLatest(item)
     pushToast('Upload received. Processing content...')
     setMetadata(initialMetadata)
+    setStep(3)
   }
 
   return (
@@ -71,26 +73,67 @@ function UploadPage() {
           </select>
         </div> : selectedPet && <div className="chip accent-green">Uploading for {selectedPet.name}</div>}
       </div>
-      <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        <UploadDropzone onFile={upload} disabled={!selectedPetId} />
+      <div className="grid gap-3 md:grid-cols-3">
+        {[
+          [1, 'Select pet'],
+          [2, 'Describe record'],
+          [3, 'Upload & track'],
+        ].map(([number, label]) => (
+          <button className={`rounded-[22px] border p-4 text-left transition ${step === number ? 'border-mint-500 bg-[#f1fbf7]' : 'border-[#d8ede5] bg-white'}`} type="button" onClick={() => setStep(number)} key={number}>
+            <span className={`pill ${step > number ? 'accent-green' : 'accent-blue'}`}>{step > number ? <CheckCircle2 className="h-4 w-4" /> : number}</span>
+            <p className="mt-2 font-black text-ink">{label}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
+        <section className="surface-card rounded-[26px] p-5">
+          {step === 1 && (
+            <div>
+              <h2 className="text-xl font-black text-ink">Choose the pet this record belongs to</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {pets.map((pet) => (
+                  <button className={`rounded-[22px] border p-4 text-left ${selectedPetId === pet._id ? 'border-mint-500 bg-[#f1fbf7]' : 'border-[#d8ede5] bg-white'}`} type="button" onClick={() => { selectPet(pet._id); setStep(2) }} key={pet._id}>
+                    <p className="font-black text-ink">{pet.name}</p>
+                    <p className="text-sm capitalize text-[#527b70]">{pet.species}{pet.breed ? ` - ${pet.breed}` : ''}</p>
+                  </button>
+                ))}
+              </div>
+              {pets.length === 0 && <div className="empty-state mt-4 rounded-2xl p-6 text-center">Create a pet profile before uploading records.</div>}
+            </div>
+          )}
+          {step === 2 && (
+            <div>
+              <h2 className="text-xl font-black text-ink">Describe this document</h2>
+              <p className="mt-1 text-sm text-[#527b70]">Good labels make chat and timeline retrieval more accurate.</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <input className="field" type="date" value={metadata.document_date} onChange={(e) => setMetadata({ ...metadata, document_date: e.target.value })} />
+                <select className="field" value={metadata.document_type} onChange={(e) => setMetadata({ ...metadata, document_type: e.target.value })}>
+                  <option value="medical_record">Medical record</option>
+                  <option value="vaccination">Vaccination / Tiêm phòng</option>
+                  <option value="lab_result">Lab result / Xét nghiệm</option>
+                  <option value="prescription">Prescription / Đơn thuốc</option>
+                  <option value="symptom_note">Symptom note / Triệu chứng</option>
+                  <option value="diet">Diet / Dinh dưỡng</option>
+                  <option value="image">Image / Hình ảnh</option>
+                  <option value="other">Other</option>
+                </select>
+                <input className="field sm:col-span-2" placeholder="Labels: vaccine, rabies, xét nghiệm..." value={metadata.labels} onChange={(e) => setMetadata({ ...metadata, labels: e.target.value })} />
+                <textarea className="field min-h-28 resize-none sm:col-span-2" placeholder="Notes for retrieval" value={metadata.notes} onChange={(e) => setMetadata({ ...metadata, notes: e.target.value })} />
+              </div>
+              <button className="btn-primary mt-4" type="button" disabled={!selectedPetId} onClick={() => setStep(3)}>Continue to upload</button>
+            </div>
+          )}
+          {step === 3 && <UploadDropzone onFile={upload} disabled={!selectedPetId} />}
+        </section>
         <aside className="surface-card rounded-[26px] p-5">
           <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#edf6ff] text-[#25608a]"><DatabaseZap className="h-6 w-6" /></div>
           <h2 className="mt-4 text-xl font-black text-ink">Document metadata</h2>
           <p className="mt-1 text-sm text-[#527b70]">Labels help hybrid retrieval route questions to the most relevant files.</p>
-          <div className="mt-4 space-y-3">
-            <input className="field" type="date" value={metadata.document_date} onChange={(e) => setMetadata({ ...metadata, document_date: e.target.value })} />
-            <select className="field" value={metadata.document_type} onChange={(e) => setMetadata({ ...metadata, document_type: e.target.value })}>
-              <option value="medical_record">Medical record</option>
-              <option value="vaccination">Vaccination / Tiêm phòng</option>
-              <option value="lab_result">Lab result / Xét nghiệm</option>
-              <option value="prescription">Prescription / Đơn thuốc</option>
-              <option value="symptom_note">Symptom note / Triệu chứng</option>
-              <option value="diet">Diet / Dinh dưỡng</option>
-              <option value="image">Image / Hình ảnh</option>
-              <option value="other">Other</option>
-            </select>
-            <input className="field" placeholder="Labels: vaccine, rabies, xét nghiệm..." value={metadata.labels} onChange={(e) => setMetadata({ ...metadata, labels: e.target.value })} />
-            <textarea className="field min-h-24 resize-none" placeholder="Notes for retrieval" value={metadata.notes} onChange={(e) => setMetadata({ ...metadata, notes: e.target.value })} />
+          <div className="mt-4 space-y-3 text-sm font-bold text-[#527b70]">
+            <div className="rounded-2xl bg-white p-3">Pet: <span className="text-ink">{selectedPet?.name || 'Not selected'}</span></div>
+            <div className="rounded-2xl bg-white p-3">Type: <span className="text-ink">{metadata.document_type}</span></div>
+            <div className="rounded-2xl bg-white p-3">Labels: <span className="text-ink">{metadata.labels || 'None'}</span></div>
           </div>
           <h3 className="mt-6 text-sm font-black uppercase text-[#527b70]">Processing pipeline</h3>
           <div className="mt-3 space-y-3 text-sm font-bold text-[#527b70]">

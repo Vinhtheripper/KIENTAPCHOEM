@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Bot, MessageSquare, ShieldCheck } from 'lucide-react'
 import ContentDetailPanel from '../components/content/ContentDetailPanel.jsx'
 import { contentApi } from '../api/contentApi.js'
+import { petApi } from '../api/petApi.js'
 import useAuthStore from '../store/authStore.js'
 import ChatInterface from '../components/chat/ChatInterface.jsx'
 import useChatStore from '../store/chatStore.js'
@@ -15,6 +16,7 @@ function ChatPage() {
   const { sessions, fetchSessions, loadSession, reset, sessionId } = useChatStore()
   const [selectedContent, setSelectedContent] = useState(null)
   const [contentLoading, setContentLoading] = useState(false)
+  const [summary, setSummary] = useState(null)
 
   useEffect(() => {
     ;(isAdmin ? fetchAdminPets : fetchPets)().catch(() => {})
@@ -23,6 +25,11 @@ function ChatPage() {
   useEffect(() => {
     fetchSessions(selectedPetId).catch(() => {})
   }, [fetchSessions, selectedPetId])
+
+  useEffect(() => {
+    if (!selectedPetId) return
+    petApi.summary(selectedPetId).then(setSummary).catch(() => setSummary(null))
+  }, [selectedPetId])
 
   const openCitation = async (citation) => {
     if (!citation?.content_id) return
@@ -50,7 +57,18 @@ function ChatPage() {
           </select>
         </div> : selectedPet && <div className="chip accent-green">Current pet: {selectedPet.name}</div>}
       </div>
-      <div className="chip accent-amber"><ShieldCheck className="h-4 w-4" /> This AI assistant does not replace professional veterinary diagnosis.</div>
+      <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+        <div className="surface-card rounded-[22px] p-4">
+          <p className="text-sm font-black uppercase text-[#527b70]">AI is answering for</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="chip accent-green">{selectedPet?.name || 'No pet selected'}</span>
+            <span className="chip">{summary?.content_count ?? 0} records</span>
+            <span className="chip">{summary?.upcoming_care?.length ?? 0} reminders</span>
+            {summary?.allergies?.length ? <span className="chip accent-coral">Allergies: {summary.allergies.join(', ')}</span> : null}
+          </div>
+        </div>
+        <div className="chip accent-amber self-start"><ShieldCheck className="h-4 w-4" /> Informational only, not a diagnosis.</div>
+      </div>
       <div className="grid gap-5 xl:grid-cols-[280px_1fr]">
         <aside className="surface-card rounded-[26px] p-4">
           <div className="flex items-center justify-between gap-3">

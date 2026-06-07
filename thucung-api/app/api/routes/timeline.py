@@ -4,13 +4,17 @@ from app.api.deps import get_current_user
 from app.models.timeline_event import timeline_event_document
 from app.schemas.timeline import TimelineEventCreate, TimelineEventUpdate
 from app.services.repositories.content_repository import ContentRepository
+from app.services.repositories.audit_repository import AuditRepository
 from app.services.repositories.pet_repository import PetRepository
 from app.services.repositories.timeline_repository import TimelineRepository
+from app.services.pet_summary_service import PetSummaryService
 
 router = APIRouter()
 pets = PetRepository()
 content = ContentRepository()
 timeline = TimelineRepository()
+audit = AuditRepository()
+summary_service = PetSummaryService()
 
 
 def normalize_event_type(value: str | None) -> str:
@@ -18,6 +22,9 @@ def normalize_event_type(value: str | None) -> str:
 
 
 def timeline_event_row(event: dict) -> dict:
+    content_ids = event.get("content_ids") or []
+    if event.get("related_content_id") and event.get("related_content_id") not in content_ids:
+        content_ids = [event.get("related_content_id"), *content_ids]
     return {
         "id": event["_id"],
         "source": "timeline_event",
@@ -27,7 +34,8 @@ def timeline_event_row(event: dict) -> dict:
         "status": event.get("status", "planned"),
         "labels": event.get("labels", []),
         "notes": event.get("notes"),
-        "content_id": event.get("related_content_id"),
+        "content_id": content_ids[0] if content_ids else None,
+        "content_ids": content_ids,
         "event_id": event["_id"],
         "created_by": event.get("created_by"),
     }
@@ -103,7 +111,11 @@ async def create_timeline_event(payload: TimelineEventCreate, current_user: dict
     data = payload.model_dump()
     pet_id = data.pop("pet_id")
     data["type"] = normalize_event_type(data.get("type"))
+    if data.get("related_content_id") and data["related_content_id"] not in data.get("content_ids", []):
+        data["content_ids"] = [data["related_content_id"], *(data.get("content_ids") or [])]
     event = await timeline.create(timeline_event_document(pet["owner_id"], pet_id, data, current_user["_id"]))
+    await summary_service.build(pet["owner_id"], pet_id, admin=True)
+    await audit.log(current_user["_id"], "create", "timeline_event", event["_id"], pet["owner_id"], pet_id, {"type": event.get("type"), "title": event.get("title")})
     return timeline_event_row(event)
 
 
@@ -113,14 +125,23 @@ async def update_timeline_event(event_id: str, payload: TimelineEventUpdate, cur
     event = await timeline.get(event_id, current_user["_id"], admin=is_admin)
     if not event:
         raise HTTPException(status_code=404, detail="Timeline event not found")
-    updated = await timeline.update(event_id, current_user["_id"], payload.model_dump(), admin=is_admin)
+    data = payload.model_dump()
+    if data.get("related_content_id") and data["related_content_id"] not in (data.get("content_ids") or []):
+        data["content_ids"] = [data["related_content_id"], *(data.get("content_ids") or [])]
+    updated = await timeline.update(event_id, current_user["_id"], data, admin=is_admin)
+    await summary_service.build(updated["owner_id"], updated["pet_id"], admin=True)
+    await audit.log(current_user["_id"], "update", "timeline_event", event_id, updated["owner_id"], updated["pet_id"], data)
     return timeline_event_row(updated)
 
 
 @router.delete("/events/{event_id}")
 async def delete_timeline_event(event_id: str, current_user: dict = Depends(get_current_user)):
     is_admin = current_user.get("role") == "admin"
+    event = await timeline.get(event_id, current_user["_id"], admin=is_admin)
     deleted = await timeline.delete(event_id, current_user["_id"], admin=is_admin)
     if not deleted:
         raise HTTPException(status_code=404, detail="Timeline event not found")
+    if event:
+        await summary_service.build(event["owner_id"], event["pet_id"], admin=True)
+        await audit.log(current_user["_id"], "delete", "timeline_event", event_id, event["owner_id"], event["pet_id"])
     return {"ok": True}

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Bot, FileText, HeartPulse, Plus, ShieldCheck, Syringe, Users } from 'lucide-react'
+import { ArrowRight, Bot, CalendarDays, FileText, HeartPulse, Plus, ShieldCheck, Syringe, UploadCloud, Users } from 'lucide-react'
 import { adminApi } from '../api/adminApi.js'
+import { petApi } from '../api/petApi.js'
 import useAuthStore from '../store/authStore.js'
 import usePetStore from '../store/petStore.js'
 import PetEditModal from '../components/pet/PetEditModal.jsx'
@@ -119,35 +120,45 @@ function AdminDashboard() {
 function OwnerDashboard() {
   const { pets, selectedPetId, selectPet, fetchPets, deletePet } = usePetStore()
   const [editingPet, setEditingPet] = useState(null)
+  const [summary, setSummary] = useState(null)
+  const selectedPet = pets.find((pet) => pet._id === selectedPetId)
 
   useEffect(() => {
     fetchPets().catch(() => {})
   }, [fetchPets])
 
+  useEffect(() => {
+    if (!selectedPetId) return
+    petApi.summary(selectedPetId).then(setSummary).catch(() => setSummary(null))
+  }, [selectedPetId])
+
   return (
     <div className="space-y-6">
       <div className="surface-card overflow-hidden rounded-[28px]">
-        <div className="grid gap-6 p-6 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
+        <div className="grid gap-6 p-6 lg:grid-cols-[1.25fr_0.75fr] lg:p-8">
           <div>
-            <span className="eyebrow"><ShieldCheck className="h-4 w-4" /> Veterinary memory desk</span>
-            <h1 className="page-title mt-4">Pet health dashboard</h1>
-            <p className="mt-3 max-w-2xl text-[#527b70]">Manage profiles, uploaded knowledge, vaccine timeline, and AI veterinary guidance in one workspace.</p>
+            <span className="eyebrow"><ShieldCheck className="h-4 w-4" /> Pet command center</span>
+            <h1 className="page-title mt-4">{selectedPet ? `${selectedPet.name}'s care hub` : 'Pet health dashboard'}</h1>
+            <p className="mt-3 max-w-2xl whitespace-pre-line text-[#527b70]">{summary?.summary_text || 'Manage profiles, uploaded knowledge, vaccine timeline, and AI veterinary guidance in one workspace.'}</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link className="btn-primary" to="/app/pets"><Plus className="h-4 w-4" />Add pet</Link>
+              <Link className="btn-secondary" to="/app/upload"><UploadCloud className="h-4 w-4" />Upload record</Link>
+              <Link className="btn-secondary" to="/app/timeline"><CalendarDays className="h-4 w-4" />Timeline</Link>
               <Link className="btn-secondary" to="/app/chat">Ask assistant <ArrowRight className="h-4 w-4" /></Link>
             </div>
           </div>
           <div className="rounded-[24px] border border-[#d8ede5] bg-[#f8fcfa] p-5">
-            <p className="text-sm font-black uppercase text-[#17785d]">Workspace status</p>
+            <p className="text-sm font-black uppercase text-[#17785d]">Selected pet snapshot</p>
             <div className="mt-5 grid gap-3">
               {[
                 ['Profiles', `${pets.length} active`],
-                ['AI model', 'Gemini ready'],
-                ['Storage', 'MongoDB Atlas'],
+                ['Records', `${summary?.content_count ?? 0} linked`],
+                ['Conditions', summary?.chronic_conditions?.length ? summary.chronic_conditions.join(', ') : 'None recorded'],
+                ['Allergies', summary?.allergies?.length ? summary.allergies.join(', ') : 'None recorded'],
               ].map(([label, value]) => (
                 <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3" key={label}>
                   <span className="text-sm font-bold text-[#527b70]">{label}</span>
-                  <span className="font-black text-ink">{value}</span>
+                  <span className="max-w-[160px] truncate text-right font-black text-ink">{value}</span>
                 </div>
               ))}
             </div>
@@ -157,8 +168,8 @@ function OwnerDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           [HeartPulse, pets.length, 'Pets managed', 'accent-green'],
-          [FileText, 'Live', 'Content library', 'accent-blue'],
-          [Syringe, 'Ready', 'Vaccine timeline', 'accent-amber'],
+          [FileText, summary?.content_count ?? 0, 'Linked records', 'accent-blue'],
+          [Syringe, summary?.upcoming_care?.length ?? 0, 'Care reminders', 'accent-amber'],
           [Bot, 'Gemini', 'Cloud AI model', 'accent-coral'],
         ].map(([Icon, value, label, accent]) => (
           <div className="stat-card" key={label}>
@@ -171,6 +182,20 @@ function OwnerDashboard() {
         ))}
       </div>
       <section>
+        {!!summary?.upcoming_care?.length && (
+          <div className="surface-card mb-5 rounded-[24px] p-5">
+            <h2 className="text-xl font-black text-ink">Upcoming care reminders</h2>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {summary.upcoming_care.slice(0, 4).map((event, index) => (
+                <div className="rounded-2xl border border-[#d8ede5] bg-[#f8fcfa] p-4" key={`${event.title}-${index}`}>
+                  <span className={`chip ${event.status === 'overdue' ? 'accent-coral' : 'accent-amber'}`}>{event.status}</span>
+                  <p className="mt-2 font-black text-ink">{event.title}</p>
+                  <p className="text-sm text-[#527b70]">{event.date || 'No date'} - {event.type}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <h2 className="mb-3 text-xl font-black text-ink">Your pets</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} onDelete={deletePet} onEdit={setEditingPet} />)}

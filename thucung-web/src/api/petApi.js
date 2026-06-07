@@ -9,5 +9,6 @@ export const petApi = {
     form.append('file', file)
     return apiClient.post(`/pets/${petId}/avatar`, form).then((res) => res.data)
   },
+  summary: (petId) => apiClient.get(`/pets/${petId}/summary`).then((res) => res.data),
   remove: (petId) => apiClient.delete(`/pets/${petId}`).then((res) => res.data),
 }

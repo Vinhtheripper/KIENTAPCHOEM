@@ -12,6 +12,7 @@ def build_rag_prompt(
     history: list[dict],
     pet_profile: dict | None = None,
     timeline_events: list[dict] | None = None,
+    medical_summary: dict | None = None,
 ) -> str:
     context = "\n\n".join(
         (
@@ -38,6 +39,7 @@ def build_rag_prompt(
     return (
         f"{SYSTEM_PROMPT}\n\n"
         f"Structured pet profile:\n{profile}\n\n"
+        f"Pet medical summary:\n{(medical_summary or {}).get('summary_text', '')}\n\n"
         f"Relevant medical timeline:\n{timeline}\n\n"
         f"Conversation memory:\n{memory}\n\n"
         f"Retrieved pet context:\n{context}\n\n"

@@ -7,13 +7,21 @@ from app.models.pet import pet_document
 from app.schemas.pet import PetCreate, PetUpdate
 from app.services.repositories.chat_repository import ChatRepository
 from app.services.repositories.content_repository import ContentRepository
+from app.services.repositories.audit_repository import AuditRepository
 from app.services.repositories.pet_repository import PetRepository
+from app.services.repositories.summary_repository import SummaryRepository
+from app.services.repositories.timeline_repository import TimelineRepository
+from app.services.pet_summary_service import PetSummaryService
 from app.services.storage.local_storage import LocalStorage
 
 router = APIRouter()
 pets = PetRepository()
 content = ContentRepository()
 chat = ChatRepository()
+timeline = TimelineRepository()
+audit = AuditRepository()
+summaries = SummaryRepository()
+summary_service = PetSummaryService()
 storage = LocalStorage()
 
 
@@ -24,7 +32,10 @@ async def list_pets(current_user: dict = Depends(get_current_user)):
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_pet(payload: PetCreate, current_user: dict = Depends(get_current_user)):
-    return await pets.create(pet_document(current_user["_id"], payload.model_dump(exclude_none=True)))
+    pet = await pets.create(pet_document(current_user["_id"], payload.model_dump(exclude_none=True)))
+    await summary_service.build(current_user["_id"], pet["_id"])
+    await audit.log(current_user["_id"], "create", "pet", pet["_id"], current_user["_id"], pet["_id"], {"name": pet.get("name")})
+    return pet
 
 
 @router.patch("/{pet_id}")
@@ -32,7 +43,17 @@ async def update_pet(pet_id: str, payload: PetUpdate, current_user: dict = Depen
     pet = await pets.update(pet_id, current_user["_id"], payload.model_dump(exclude_none=True))
     if not pet:
         raise HTTPException(status_code=404, detail="Pet not found")
+    await summary_service.build(current_user["_id"], pet_id)
+    await audit.log(current_user["_id"], "update", "pet", pet_id, current_user["_id"], pet_id, payload.model_dump(exclude_none=True))
     return pet
+
+
+@router.get("/{pet_id}/summary")
+async def pet_summary(pet_id: str, current_user: dict = Depends(get_current_user)):
+    summary = await summary_service.build(current_user["_id"], pet_id, admin=current_user.get("role") == "admin")
+    if not summary:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    return summary
 
 
 @router.post("/{pet_id}/avatar")
@@ -47,6 +68,8 @@ async def upload_pet_avatar(pet_id: str, file: UploadFile = File(...), current_u
     else:
         avatar_url = f"/uploads/{relative_path}"
     updated = await pets.update(pet_id, current_user["_id"], {"avatar_url": avatar_url})
+    await summary_service.build(current_user["_id"], pet_id)
+    await audit.log(current_user["_id"], "update_avatar", "pet", pet_id, current_user["_id"], pet_id)
     return updated
 
 
@@ -58,3 +81,6 @@ async def delete_pet(pet_id: str, current_user: dict = Depends(get_current_user)
         raise HTTPException(status_code=404, detail="Pet not found")
     await content.delete_for_pet(owner_id, pet_id)
     await chat.delete_for_pet(owner_id, pet_id)
+    await timeline.delete_for_pet(owner_id, pet_id)
+    await summaries.delete_for_pet(owner_id, pet_id)
+    await audit.log(current_user["_id"], "delete", "pet", pet_id, owner_id, pet_id)

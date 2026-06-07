@@ -5,13 +5,17 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
 from app.api.deps import get_current_user
 from app.models.content_item import content_item_document
 from app.services.ingest.content_ingest_service import ContentIngestService
+from app.services.repositories.audit_repository import AuditRepository
 from app.services.repositories.content_repository import ContentRepository
+from app.services.pet_summary_service import PetSummaryService
 from app.services.storage.local_storage import LocalStorage
 
 router = APIRouter()
 storage = LocalStorage()
 content = ContentRepository()
 ingest = ContentIngestService()
+audit = AuditRepository()
+summary_service = PetSummaryService()
 
 
 @router.post("/upload")
@@ -56,4 +60,6 @@ async def upload_content(
         )
     )
     background_tasks.add_task(ingest.process_file, item)
+    background_tasks.add_task(summary_service.build, current_user["_id"], pet_id)
+    await audit.log(current_user["_id"], "upload", "content", item["_id"], current_user["_id"], pet_id, {"title": item.get("title"), "type": content_type})
     return item

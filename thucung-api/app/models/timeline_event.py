@@ -13,6 +13,7 @@ class TimelineEvent(MongoModel):
     labels: list[str] = []
     notes: str | None = None
     related_content_id: str | None = None
+    content_ids: list[str] = []
     created_by: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None

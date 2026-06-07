@@ -4,6 +4,7 @@ from app.services.rag.retrieval import RetrievalService
 from app.services.repositories.chat_repository import ChatRepository
 from app.services.repositories.pet_repository import PetRepository
 from app.services.repositories.timeline_repository import TimelineRepository
+from app.services.pet_summary_service import PetSummaryService
 
 
 DISCLAIMER = "This AI assistant does not replace professional veterinary diagnosis."
@@ -16,6 +17,7 @@ class RagService:
         self.chat_repository = ChatRepository()
         self.pet_repository = PetRepository()
         self.timeline_repository = TimelineRepository()
+        self.summary_service = PetSummaryService()
 
     def fast_profile_answer(self, message: str, pet_profile: dict | None, timeline_events: list[dict]) -> str | None:
         if not pet_profile:
@@ -71,13 +73,14 @@ class RagService:
         history = await self.chat_repository.recent_messages(session_id)
         pet_profile = await self.pet_repository.get(pet_id, owner_id)
         timeline_events = await self.timeline_repository.upcoming_for_pet(owner_id, pet_id)
+        medical_summary = await self.summary_service.build(owner_id, pet_id)
         fast_answer = self.fast_profile_answer(message, pet_profile, timeline_events)
         if fast_answer:
             await self.chat_repository.add_message(session_id, pet_id, owner_id, "user", message)
             await self.chat_repository.add_message(session_id, pet_id, owner_id, "assistant", fast_answer, [])
             return {"session_id": session_id, "answer": fast_answer, "citations": []}
         chunks = await self.retrieval.retrieve(owner_id, pet_id, message)
-        prompt = build_rag_prompt(message, chunks, history, pet_profile, timeline_events)
+        prompt = build_rag_prompt(message, chunks, history, pet_profile, timeline_events, medical_summary)
         answer = await self.ai.generate(prompt)
         citations = [
             {

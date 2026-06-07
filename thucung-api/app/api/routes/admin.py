@@ -4,11 +4,13 @@ from app.api.deps import require_admin
 from app.services.repositories.content_repository import ContentRepository
 from app.services.repositories.pet_repository import PetRepository
 from app.services.repositories.user_repository import UserRepository
+from app.services.repositories.audit_repository import AuditRepository
 
 router = APIRouter()
 users = UserRepository()
 pets = PetRepository()
 content = ContentRepository()
+audit = AuditRepository()
 
 
 def attach_owner(rows: list[dict], user_rows: list[dict]) -> list[dict]:
@@ -43,3 +45,8 @@ async def list_all_content(owner_id: str | None = None, pet_id: str | None = Non
     user_rows = await users.list_all()
     content_rows = await content.list_items(owner_id, pet_id, admin=True)
     return attach_owner(content_rows, user_rows)
+
+
+@router.get("/audit")
+async def list_audit_logs(_: dict = Depends(require_admin)):
+    return await audit.list_recent()

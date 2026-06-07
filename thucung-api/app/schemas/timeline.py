@@ -10,6 +10,7 @@ class TimelineEventCreate(BaseModel):
     labels: list[str] = []
     notes: str | None = None
     related_content_id: str | None = None
+    content_ids: list[str] = []
 
 
 class TimelineEventUpdate(BaseModel):
@@ -20,3 +21,4 @@ class TimelineEventUpdate(BaseModel):
     labels: list[str] | None = None
     notes: str | None = None
     related_content_id: str | None = None
+    content_ids: list[str] | None = None

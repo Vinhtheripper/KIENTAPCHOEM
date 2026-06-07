@@ -1,4 +1,5 @@
 from bson import ObjectId
+from datetime import date
 
 from app.core.database import get_database
 from app.models.common import now_utc
@@ -14,6 +15,15 @@ class TimelineRepository:
         data["_id"] = str(result.inserted_id)
         return data
 
+    def apply_business_status(self, document: dict) -> dict:
+        if document.get("status") == "planned" and document.get("date"):
+            try:
+                if date.fromisoformat(str(document["date"])[:10]) < date.today():
+                    document["status"] = "overdue"
+            except ValueError:
+                pass
+        return document
+
     async def list_for_pet(self, owner_id: str | None, pet_id: str, admin: bool = False) -> list[dict]:
         query = {"pet_id": pet_id}
         if not admin:
@@ -21,7 +31,7 @@ class TimelineRepository:
         rows = []
         async for document in self.collection.find(query).sort("date", -1):
             document["_id"] = str(document["_id"])
-            rows.append(document)
+            rows.append(self.apply_business_status(document))
         return rows
 
     async def get(self, event_id: str, owner_id: str | None, admin: bool = False) -> dict | None:
@@ -31,6 +41,7 @@ class TimelineRepository:
         document = await self.collection.find_one(query)
         if document:
             document["_id"] = str(document["_id"])
+            document = self.apply_business_status(document)
         return document
 
     async def update(self, event_id: str, owner_id: str | None, data: dict, admin: bool = False) -> dict | None:
@@ -51,7 +62,10 @@ class TimelineRepository:
 
     async def upcoming_for_pet(self, owner_id: str, pet_id: str, limit: int = 8) -> list[dict]:
         rows = []
-        async for document in self.collection.find({"owner_id": owner_id, "pet_id": pet_id}).sort("date", 1).limit(limit):
+        async for document in self.collection.find({"owner_id": owner_id, "pet_id": pet_id, "status": {"$in": ["planned", "overdue"]}}).sort("date", 1).limit(limit):
             document["_id"] = str(document["_id"])
-            rows.append(document)
+            rows.append(self.apply_business_status(document))
         return rows
+
+    async def delete_for_pet(self, owner_id: str, pet_id: str) -> None:
+        await self.collection.delete_many({"owner_id": owner_id, "pet_id": pet_id})

@@ -30,6 +30,22 @@ class ContentRepository:
         await self.items.update_one(query, {"$set": {"metadata": metadata}})
         return await self.get_item(content_id, owner_id, admin=admin)
 
+    async def sync_chunk_metadata(self, content_id: str, owner_id: str | None, metadata: dict, admin: bool = False) -> None:
+        query = {"content_id": content_id}
+        if not admin:
+            query["owner_id"] = owner_id
+        await self.chunks.update_many(
+            query,
+            {
+                "$set": {
+                    "metadata.document_type": metadata.get("document_type"),
+                    "metadata.document_date": metadata.get("document_date"),
+                    "metadata.labels": metadata.get("labels", []),
+                    "metadata.categories": metadata.get("categories", []),
+                }
+            },
+        )
+
     async def list_items(self, owner_id: str | None, pet_id: str | None = None, admin: bool = False) -> list[dict]:
         query = {} if admin else {"owner_id": owner_id}
         if owner_id and admin:

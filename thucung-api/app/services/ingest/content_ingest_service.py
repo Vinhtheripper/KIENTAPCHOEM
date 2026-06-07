@@ -8,6 +8,7 @@ from app.services.ingest.video_ingest_service import VideoIngestService
 from app.services.rag.chunking import chunk_text
 from app.services.rag.classifier import QueryClassifier
 from app.services.repositories.content_repository import ContentRepository
+from app.services.pet_summary_service import PetSummaryService
 
 
 class ContentIngestService:
@@ -18,6 +19,7 @@ class ContentIngestService:
         self.embeddings = EmbeddingsService()
         self.content_repository = ContentRepository()
         self.classifier = QueryClassifier()
+        self.summary_service = PetSummaryService()
 
     def detect_type(self, filename: str) -> str:
         suffix = Path(filename).suffix.lower()
@@ -74,5 +76,27 @@ class ContentIngestService:
                 )
             await self.content_repository.save_chunks(chunks)
             await self.content_repository.mark_item(content_id, "ready", {**item_metadata, "chunk_count": len(chunks), "categories": categories})
+            await self.summary_service.build(content_item["owner_id"], content_item["pet_id"])
         except Exception as exc:
             await self.content_repository.mark_item(content_id, "failed", {"error": str(exc)})
+
+    async def reindex_pet_metadata(self, owner_id: str, pet_id: str, admin: bool = False) -> int:
+        items = await self.content_repository.list_items(owner_id, pet_id, admin=admin)
+        changed = 0
+        for item in items:
+            item_metadata = item.get("metadata", {}) or {}
+            labels = item_metadata.get("labels", []) or []
+            document_type = item_metadata.get("document_type")
+            chunks = await self.content_repository.get_chunks_for_content(item["_id"], owner_id, admin=admin)
+            categories = sorted(
+                self.classifier.classify(
+                    " ".join([item.get("title", ""), item_metadata.get("notes") or "", " ".join(chunk.get("text", "")[:500] for chunk in chunks[:5])]),
+                    labels,
+                    document_type,
+                )
+            )
+            metadata = {**item_metadata, "categories": categories, "chunk_count": len(chunks)}
+            await self.content_repository.update_metadata(item["_id"], owner_id, metadata, admin=admin)
+            await self.content_repository.sync_chunk_metadata(item["_id"], owner_id, metadata, admin=admin)
+            changed += 1
+        return changed
