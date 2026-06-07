@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage.jsx'
 import PetProfilePage from './pages/PetProfilePage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
+import TimelinePage from './pages/TimelinePage.jsx'
 import UploadPage from './pages/UploadPage.jsx'
 import useAuthStore from './store/authStore.js'
 
@@ -20,6 +21,11 @@ function ProtectedRoute({ children }) {
 function AdminRoute({ children }) {
   const user = useAuthStore((state) => state.user)
   return user?.role === 'admin' ? children : <Navigate to="/app" replace />
+}
+
+function OwnerRoute({ children }) {
+  const user = useAuthStore((state) => state.user)
+  return user?.role !== 'admin' ? children : <Navigate to="/app" replace />
 }
 
 function App() {
@@ -39,9 +45,10 @@ function App() {
         <Route index element={<DashboardPage />} />
         <Route path="users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
         <Route path="pets" element={<PetProfilePage />} />
-        <Route path="upload" element={<UploadPage />} />
+        <Route path="upload" element={<OwnerRoute><UploadPage /></OwnerRoute>} />
         <Route path="content" element={<ContentPage />} />
-        <Route path="chat" element={<ChatPage />} />
+        <Route path="timeline" element={<TimelinePage />} />
+        <Route path="chat" element={<OwnerRoute><ChatPage /></OwnerRoute>} />
         <Route path="settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
       </Route>
     </Routes>

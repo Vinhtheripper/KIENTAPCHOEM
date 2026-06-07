@@ -211,6 +211,73 @@ button:disabled {
   font-weight: 800;
 }
 
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tab-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border-radius: 14px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #527b70;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.tab-button:hover {
+  background: #f1fbf7;
+  color: #17312b;
+}
+
+.tab-button-active {
+  background: #17312b;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(23, 49, 43, 0.14);
+}
+
+.data-row {
+  border: 1px solid #e4f1ec;
+  background: #ffffff;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.data-row:hover {
+  border-color: #92d5c0;
+  box-shadow: 0 14px 30px rgba(25, 87, 73, 0.08);
+  transform: translateY(-1px);
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #eef7f3;
+}
+
+.skeleton::after {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: skeleton-shimmer 1.25s infinite;
+  content: "";
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .accent-green {
   background: #effbf6;
   color: #17785d;

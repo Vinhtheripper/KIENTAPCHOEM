@@ -3,7 +3,7 @@ import useChatStore from '../../store/chatStore.js'
 import ChatInput from './ChatInput.jsx'
 import ChatMessage from './ChatMessage.jsx'
 
-function ChatInterface({ petId }) {
+function ChatInterface({ petId, onCitationClick }) {
   const { messages, loading, sendMessage } = useChatStore()
 
   return (
@@ -26,7 +26,7 @@ function ChatInterface({ petId }) {
             </div>
           </div>
         )}
-        {messages.map((message, index) => <ChatMessage key={index} message={message} />)}
+        {messages.map((message, index) => <ChatMessage key={index} message={message} onCitationClick={onCitationClick} />)}
         {loading && <ChatMessage message={{ role: 'assistant', content: 'Thinking with your pet records...' }} />}
       </div>
       <div className="mt-4">

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import admin, auth, chat, content, health, pets, upload
+from app.api.routes import admin, auth, chat, content, health, pets, timeline, upload
 from app.core.config import settings
 from app.core.database import close_mongo_connection, connect_to_mongo
 
@@ -41,6 +41,7 @@ app.include_router(pets.router, prefix="/pets", tags=["pets"])
 app.include_router(content.router, prefix="/content", tags=["content"])
 app.include_router(upload.router, prefix="/content", tags=["upload"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
+app.include_router(timeline.router, prefix="/timeline", tags=["timeline"])
 settings.upload_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 

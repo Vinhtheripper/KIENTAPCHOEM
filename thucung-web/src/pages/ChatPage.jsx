@@ -1,5 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Bot, MessageSquare, ShieldCheck } from 'lucide-react'
+import ContentDetailPanel from '../components/content/ContentDetailPanel.jsx'
+import { contentApi } from '../api/contentApi.js'
 import useAuthStore from '../store/authStore.js'
 import ChatInterface from '../components/chat/ChatInterface.jsx'
 import useChatStore from '../store/chatStore.js'
@@ -11,6 +13,8 @@ function ChatPage() {
   const selectedPet = pets.find((pet) => pet._id === selectedPetId)
   const isAdmin = user?.role === 'admin'
   const { sessions, fetchSessions, loadSession, reset, sessionId } = useChatStore()
+  const [selectedContent, setSelectedContent] = useState(null)
+  const [contentLoading, setContentLoading] = useState(false)
 
   useEffect(() => {
     ;(isAdmin ? fetchAdminPets : fetchPets)().catch(() => {})
@@ -19,6 +23,17 @@ function ChatPage() {
   useEffect(() => {
     fetchSessions(selectedPetId).catch(() => {})
   }, [fetchSessions, selectedPetId])
+
+  const openCitation = async (citation) => {
+    if (!citation?.content_id) return
+    setContentLoading(true)
+    setSelectedContent({ title: citation.title || 'Loading...' })
+    try {
+      setSelectedContent(await contentApi.detail(citation.content_id))
+    } finally {
+      setContentLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -57,7 +72,10 @@ function ChatPage() {
             {sessions.length === 0 && <p className="rounded-2xl bg-[#f8fcfa] p-4 text-sm font-bold text-[#527b70]">No chat sessions yet.</p>}
           </div>
         </aside>
-        <ChatInterface petId={selectedPetId} />
+        <div className="space-y-5">
+          <ChatInterface petId={selectedPetId} onCitationClick={openCitation} />
+          <ContentDetailPanel item={selectedContent} loading={contentLoading} onClose={() => setSelectedContent(null)} onUpdated={(updated) => setSelectedContent(updated)} />
+        </div>
       </div>
     </div>
   )

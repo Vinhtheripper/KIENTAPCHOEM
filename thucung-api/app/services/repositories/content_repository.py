@@ -23,6 +23,13 @@ class ContentRepository:
             update["metadata"] = metadata
         await self.items.update_one({"_id": ObjectId(content_id)}, {"$set": update})
 
+    async def update_metadata(self, content_id: str, owner_id: str | None, metadata: dict, admin: bool = False) -> dict | None:
+        query = {"_id": ObjectId(content_id)}
+        if not admin:
+            query["owner_id"] = owner_id
+        await self.items.update_one(query, {"$set": {"metadata": metadata}})
+        return await self.get_item(content_id, owner_id, admin=admin)
+
     async def list_items(self, owner_id: str | None, pet_id: str | None = None, admin: bool = False) -> list[dict]:
         query = {} if admin else {"owner_id": owner_id}
         if owner_id and admin:
@@ -57,6 +64,12 @@ class ContentRepository:
     async def save_chunks(self, chunks: list[dict]) -> None:
         if chunks:
             await self.chunks.insert_many(chunks)
+
+    async def delete_chunks_for_content(self, content_id: str, owner_id: str | None = None, admin: bool = False) -> None:
+        query = {"content_id": content_id}
+        if not admin:
+            query["owner_id"] = owner_id
+        await self.chunks.delete_many(query)
 
     async def get_chunks_for_pet(self, owner_id: str, pet_id: str, limit: int = 500) -> list[dict]:
         rows = []

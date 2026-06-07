@@ -1,4 +1,4 @@
-function ChatMessage({ message }) {
+function ChatMessage({ message, onCitationClick }) {
   const isUser = message.role === 'user'
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -7,9 +7,9 @@ function ChatMessage({ message }) {
         {!!message.citations?.length && (
           <div className="mt-3 flex flex-wrap gap-2">
             {message.citations.map((citation, index) => (
-              <span className="rounded-full bg-[#effbf6] px-3 py-1 text-xs font-bold text-mint-700" key={`${citation.content_id}-${index}`}>
+              <button className="rounded-full bg-[#effbf6] px-3 py-1 text-xs font-bold text-mint-700 transition hover:bg-[#d8f4e8]" type="button" onClick={() => onCitationClick?.(citation)} key={`${citation.content_id}-${index}`}>
                 {citation.title}
-              </span>
+              </button>
             ))}
           </div>
         )}
