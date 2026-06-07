@@ -1,14 +1,17 @@
 import { useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Bot, FileText, HeartPulse, Plus, ShieldCheck, Syringe } from 'lucide-react'
 import useAuthStore from '../store/authStore.js'
 import usePetStore from '../store/petStore.js'
+import PetEditModal from '../components/pet/PetEditModal.jsx'
 import PetCard from '../components/pet/PetCard.jsx'
 
 function DashboardPage() {
   const user = useAuthStore((state) => state.user)
   const { pets, selectedPetId, selectPet, fetchPets, fetchAdminPets, deletePet } = usePetStore()
   const isAdmin = user?.role === 'admin'
+  const [editingPet, setEditingPet] = useState(null)
 
   useEffect(() => {
     ;(isAdmin ? fetchAdminPets : fetchPets)().catch(() => {})
@@ -63,7 +66,7 @@ function DashboardPage() {
       <section>
         <h2 className="mb-3 text-xl font-black text-ink">Your pets</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} onDelete={deletePet} />)}
+          {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} onDelete={deletePet} onEdit={setEditingPet} />)}
         </div>
         {pets.length === 0 && (
           <div className="empty-state rounded-[24px] p-8 text-center">
@@ -73,6 +76,7 @@ function DashboardPage() {
           </div>
         )}
       </section>
+      <PetEditModal pet={editingPet} onClose={() => setEditingPet(null)} />
     </div>
   )
 }

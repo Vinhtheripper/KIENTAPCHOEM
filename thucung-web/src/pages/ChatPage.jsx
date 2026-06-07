@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
-import { Bot, ShieldCheck } from 'lucide-react'
+import { Bot, MessageSquare, ShieldCheck } from 'lucide-react'
 import useAuthStore from '../store/authStore.js'
 import ChatInterface from '../components/chat/ChatInterface.jsx'
+import useChatStore from '../store/chatStore.js'
 import usePetStore from '../store/petStore.js'
 
 function ChatPage() {
@@ -9,10 +10,15 @@ function ChatPage() {
   const user = useAuthStore((state) => state.user)
   const selectedPet = pets.find((pet) => pet._id === selectedPetId)
   const isAdmin = user?.role === 'admin'
+  const { sessions, fetchSessions, loadSession, reset, sessionId } = useChatStore()
 
   useEffect(() => {
     ;(isAdmin ? fetchAdminPets : fetchPets)().catch(() => {})
   }, [fetchPets, fetchAdminPets, isAdmin])
+
+  useEffect(() => {
+    fetchSessions(selectedPetId).catch(() => {})
+  }, [fetchSessions, selectedPetId])
 
   return (
     <div className="space-y-5">
@@ -30,7 +36,29 @@ function ChatPage() {
         </div> : selectedPet && <div className="chip accent-green">Current pet: {selectedPet.name}</div>}
       </div>
       <div className="chip accent-amber"><ShieldCheck className="h-4 w-4" /> This AI assistant does not replace professional veterinary diagnosis.</div>
-      <ChatInterface petId={selectedPetId} />
+      <div className="grid gap-5 xl:grid-cols-[280px_1fr]">
+        <aside className="surface-card rounded-[26px] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-black text-ink">Chat history</h2>
+            <button className="btn-secondary h-9 rounded-2xl px-3 text-xs" type="button" onClick={reset}>New</button>
+          </div>
+          <div className="mt-4 space-y-2">
+            {sessions.map((session) => (
+              <button
+                className={`w-full rounded-2xl border p-3 text-left text-sm transition ${session.session_id === sessionId ? 'border-mint-500 bg-[#f1fbf7]' : 'border-[#d8ede5] bg-white hover:border-mint-500'}`}
+                key={session.session_id}
+                type="button"
+                onClick={() => loadSession(session.session_id)}
+              >
+                <div className="flex items-center gap-2 font-black text-ink"><MessageSquare className="h-4 w-4" /> Session</div>
+                <p className="mt-1 line-clamp-2 text-xs text-[#527b70]">{session.last_message || session.session_id}</p>
+              </button>
+            ))}
+            {sessions.length === 0 && <p className="rounded-2xl bg-[#f8fcfa] p-4 text-sm font-bold text-[#527b70]">No chat sessions yet.</p>}
+          </div>
+        </aside>
+        <ChatInterface petId={selectedPetId} />
+      </div>
     </div>
   )
 }

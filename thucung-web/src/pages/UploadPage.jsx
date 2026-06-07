@@ -5,6 +5,7 @@ import UploadProgress from '../components/upload/UploadProgress.jsx'
 import { contentApi } from '../api/contentApi.js'
 import useAuthStore from '../store/authStore.js'
 import usePetStore from '../store/petStore.js'
+import useToastStore from '../store/toastStore.js'
 
 const initialMetadata = {
   document_date: '',
@@ -19,12 +20,27 @@ function UploadPage() {
   const [progress, setProgress] = useState(0)
   const [latest, setLatest] = useState(null)
   const [metadata, setMetadata] = useState(initialMetadata)
+  const pushToast = useToastStore((state) => state.push)
   const selectedPet = pets.find((pet) => pet._id === selectedPetId)
   const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
     ;(isAdmin ? fetchAdminPets : fetchPets)().catch(() => {})
   }, [fetchPets, fetchAdminPets, isAdmin])
+
+  useEffect(() => {
+    if (!latest?._id || !['uploaded', 'processing'].includes(latest.status)) return undefined
+    const timer = window.setInterval(() => {
+      contentApi.detail(latest._id).then((detail) => {
+        setLatest(detail)
+        if (!['uploaded', 'processing'].includes(detail.status)) {
+          pushToast(detail.status === 'ready' ? 'Content is ready for chat.' : 'Content processing failed.', detail.status === 'ready' ? 'success' : 'error')
+          window.clearInterval(timer)
+        }
+      }).catch(() => {})
+    }, 3000)
+    return () => window.clearInterval(timer)
+  }, [latest, pushToast])
 
   const upload = async (file) => {
     if (!selectedPetId) return
@@ -36,6 +52,7 @@ function UploadPage() {
       setProgress(Math.round((event.loaded * 100) / (event.total || event.loaded)))
     })
     setLatest(item)
+    pushToast('Upload received. Processing content...')
     setMetadata(initialMetadata)
   }
 

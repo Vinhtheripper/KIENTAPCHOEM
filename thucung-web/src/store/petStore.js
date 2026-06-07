@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { adminApi } from '../api/adminApi.js'
 import { petApi } from '../api/petApi.js'
+import useToastStore from './toastStore.js'
 
 const usePetStore = create((set, get) => ({
   pets: [],
@@ -19,6 +20,7 @@ const usePetStore = create((set, get) => ({
   createPet: async (payload) => {
     const pet = await petApi.create(payload)
     set((state) => ({ pets: [pet, ...state.pets], selectedPetId: pet._id }))
+    useToastStore.getState().push('Pet profile created.')
     return pet
   },
   uploadAvatar: async (petId, file) => {
@@ -29,6 +31,12 @@ const usePetStore = create((set, get) => ({
     }))
     return pet
   },
+  updatePet: async (petId, payload) => {
+    const pet = await petApi.update(petId, payload)
+    set((state) => ({ pets: state.pets.map((item) => (item._id === petId ? pet : item)) }))
+    useToastStore.getState().push('Pet profile updated.')
+    return pet
+  },
   deletePet: async (petId) => {
     await petApi.remove(petId)
     set((state) => {
@@ -36,6 +44,7 @@ const usePetStore = create((set, get) => ({
       const selectedPetId = state.selectedPetId === petId ? pets[0]?._id || null : state.selectedPetId
       return { pets, selectedPetId }
     })
+    useToastStore.getState().push('Pet deleted.', 'warning')
   },
   selectPet: (petId) => set({ selectedPetId: petId }),
 }))

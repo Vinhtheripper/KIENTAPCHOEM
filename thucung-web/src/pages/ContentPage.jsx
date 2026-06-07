@@ -12,6 +12,9 @@ function ContentPage() {
   const { selectedPetId, fetchPets, fetchAdminPets } = usePetStore()
   const user = useAuthStore((state) => state.user)
   const [items, setItems] = useState([])
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
   const [selectedItem, setSelectedItem] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const isAdmin = user?.role === 'admin'
@@ -36,6 +39,15 @@ function ContentPage() {
     }
   }
 
+  const filteredItems = items.filter((item) => {
+    const metadata = item.metadata || {}
+    const haystack = [item.title, item.type, metadata.document_type, metadata.document_date, metadata.notes, ...(metadata.labels || [])].join(' ').toLowerCase()
+    const matchesSearch = !search || haystack.includes(search.toLowerCase())
+    const matchesType = !typeFilter || metadata.document_type === typeFilter || item.type === typeFilter
+    const matchesDate = !dateFilter || metadata.document_date === dateFilter
+    return matchesSearch && matchesType && matchesDate
+  })
+
   return (
     <div className="space-y-5">
       <div>
@@ -43,9 +55,23 @@ function ContentPage() {
         <h1 className="page-title mt-4">Unified content</h1>
         <p className="mt-2 max-w-2xl text-[#527b70]">Documents, media, transcripts, URLs, and images are tracked with one architecture.</p>
       </div>
+      <div className="surface-card grid gap-3 rounded-[24px] p-4 md:grid-cols-[1fr_220px_180px]">
+        <input className="field" placeholder="Search title, label, type, notes..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className="field" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <option value="">All types</option>
+          <option value="vaccination">Vaccination</option>
+          <option value="lab_result">Lab result</option>
+          <option value="prescription">Prescription</option>
+          <option value="symptom_note">Symptom note</option>
+          <option value="diet">Diet</option>
+          <option value="image">Image</option>
+          <option value="pdf">PDF</option>
+        </select>
+        <input className="field" type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+      </div>
       <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
         <div className="grid gap-4 md:grid-cols-2">
-          {items.map((item) => <DocumentViewer key={item._id} item={item} onOpen={openDetail} />)}
+          {filteredItems.map((item) => <DocumentViewer key={item._id} item={item} onOpen={openDetail} />)}
         </div>
         <ContentDetailPanel item={selectedItem} loading={detailLoading} onClose={() => setSelectedItem(null)} />
       </div>

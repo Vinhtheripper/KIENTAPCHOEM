@@ -1,4 +1,12 @@
 import { FileText, X } from 'lucide-react'
+import apiClient from '../../api/client.js'
+
+function assetUrl(path) {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  const base = apiClient.defaults.baseURL || ''
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`
+}
 
 function ContentDetailPanel({ item, loading, onClose }) {
   if (!item && !loading) return null
@@ -48,6 +56,21 @@ function ContentDetailPanel({ item, loading, onClose }) {
           {metadata.notes && (
             <div className="rounded-2xl bg-[#fff7e8] p-4 text-sm leading-6 text-[#7c4b0b]">
               <span className="font-black">Notes: </span>{metadata.notes}
+            </div>
+          )}
+
+          {item.file_url && (
+            <div>
+              <p className="text-sm font-black text-ink">Original file preview</p>
+              <div className="mt-2 overflow-hidden rounded-2xl border border-[#d8ede5] bg-white">
+                {item.type === 'image' ? (
+                  <img className="max-h-[420px] w-full object-contain" src={assetUrl(item.file_url)} alt={item.title} />
+                ) : item.type === 'pdf' ? (
+                  <iframe className="h-[420px] w-full" src={assetUrl(item.file_url)} title={item.title} />
+                ) : (
+                  <a className="block p-4 font-black text-mint-700" href={assetUrl(item.file_url)} target="_blank" rel="noreferrer">Open original file</a>
+                )}
+              </div>
             </div>
           )}
 

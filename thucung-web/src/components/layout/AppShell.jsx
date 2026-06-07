@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar.jsx'
 import Navbar from './Navbar.jsx'
 import MobileNav from './MobileNav.jsx'
+import CurrentPetBar from './CurrentPetBar.jsx'
 
 function AppShell() {
   return (
@@ -10,6 +11,7 @@ function AppShell() {
         <Sidebar />
         <main className="flex min-w-0 flex-1 flex-col">
           <Navbar />
+          <CurrentPetBar />
           <div className="px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10">
             <Outlet />
           </div>

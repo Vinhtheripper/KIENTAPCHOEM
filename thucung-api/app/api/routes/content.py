@@ -23,6 +23,9 @@ async def get_content(content_id: str, current_user: dict = Depends(get_current_
     chunks = await content.get_chunks_for_content(content_id, current_user["_id"], admin=is_admin)
     item["chunks"] = chunks
     item["text_preview"] = "\n\n".join(chunk.get("text", "") for chunk in chunks[:8])
+    file_path = item.get("file_path")
+    if file_path:
+        item["file_url"] = f"/{file_path}" if str(file_path).startswith("uploads/") else file_path
     return item
 
 

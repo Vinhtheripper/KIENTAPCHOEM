@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { PawPrint } from 'lucide-react'
 import PetCard from '../components/pet/PetCard.jsx'
+import PetEditModal from '../components/pet/PetEditModal.jsx'
 import PetProfileForm from '../components/pet/PetProfileForm.jsx'
 import useAuthStore from '../store/authStore.js'
 import usePetStore from '../store/petStore.js'
@@ -9,6 +10,7 @@ function PetProfilePage() {
   const user = useAuthStore((state) => state.user)
   const { pets, selectedPetId, selectPet, fetchPets, fetchAdminPets, deletePet } = usePetStore()
   const isAdmin = user?.role === 'admin'
+  const [editingPet, setEditingPet] = useState(null)
 
   useEffect(() => {
     if (isAdmin) {
@@ -25,7 +27,7 @@ function PetProfilePage() {
         <h1 className="page-title mt-4">Pet profiles</h1>
         <p className="mt-2 max-w-2xl text-[#527b70]">{isAdmin ? 'Admin can inspect pets across all users. Selecting a pet updates upload, content, and chat context.' : 'Structured pet data is included in chatbot context, upload metadata, and future health summaries.'}</p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} onDelete={deletePet} />)}
+          {pets.map((pet) => <PetCard key={pet._id} pet={pet} selected={pet._id === selectedPetId} onSelect={selectPet} onDelete={deletePet} onEdit={setEditingPet} />)}
         </div>
         {pets.length === 0 && (
           <div className="empty-state mt-6 rounded-[24px] p-8 text-center">
@@ -35,6 +37,7 @@ function PetProfilePage() {
         )}
       </section>
       {!isAdmin && <PetProfileForm />}
+      <PetEditModal pet={editingPet} onClose={() => setEditingPet(null)} />
     </div>
   )
 }
